@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "agendamento-app",
+    "slug": "agendamento-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/AURA.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/AURA.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/AURA.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/AURA.png"
+    }
+  }
+}
