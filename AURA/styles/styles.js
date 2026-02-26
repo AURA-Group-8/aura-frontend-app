@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   container: {
-    flex: 2,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -58,4 +58,14 @@ export const styles = StyleSheet.create({
     fontSize: 20,
     textAlign: 'center',
   },
+
+  animacao: {
+    width: 40,
+    height: 40,
+    borderWidth: 8,
+    borderColor: '#FFF3DC',
+    borderTopColor: 'transparent',
+    borderRadius: 20,
+    marginTop: 40,
+  }
 });

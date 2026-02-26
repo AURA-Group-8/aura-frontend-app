@@ -2,7 +2,7 @@ import { styles } from '../styles/styles';
 import { Text, View, Image, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-export default function App() {
+export default function Home() {
   return (
     <LinearGradient
       colors={['#4f1223', '#8a1c3a']}
