@@ -1,8 +1,10 @@
 import { styles } from '../styles/styles';
 import { Text, View, Image, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 
 export default function App() {
+  const router = useRouter();
   return (
     <LinearGradient
       colors={['#4f1223', '#8a1c3a']}
@@ -17,7 +19,7 @@ export default function App() {
       <View style={styles.containerButton}>
         <Text style={styles.titulo}>Bem-vindo!</Text>
         
-        <Pressable style={styles.btnLogin}>
+        <Pressable style={styles.btnLogin} onPress={() => router.push('/login')}>
           <Text style={styles.btnLoginText}>LOGIN</Text>
         </Pressable>
 
