@@ -27,7 +27,7 @@ export default function SignUp() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <Image
-        source={require('../../assets/AURA.png')}
+        source={require('./../assets/AURA.png')}
         style={styles.logo}
         resizeMode="contain"
       />
