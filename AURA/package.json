@@ -11,11 +11,18 @@
   "dependencies": {
     "expo": "~54.0.33",
     "expo-linear-gradient": "~15.0.8",
+    "expo-navigation-bar": "~5.0.10",
+    "expo-router": "^55.0.3",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
+    "react-native-linear-gradient": "^2.8.3",
     "react-native-web": "^0.21.0"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "@types/react": "~19.1.10",
+    "expo-module-scripts": "^55.0.2"
+  }
 }
