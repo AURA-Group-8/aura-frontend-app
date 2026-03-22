@@ -1,16 +1,8 @@
 import { useState } from 'react';
+import { styles } from '../../styles/styles';
+import { Text, View, Image, Pressable, TextInput, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  StyleSheet,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 export default function SignUp() {
   const router = useRouter();
@@ -18,119 +10,98 @@ export default function SignUp() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [buttonHovered, setButtonHovered] = useState(false);
 
   const handleRegister = () => {
     console.log(name, email, phone, password);
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View style={localStyles.container}>
       <Pressable 
         onPress={() => router.back()}
-        style={{
-          position: 'absolute',
-          top: 20,
-          left: 20,
-          zIndex: 10,
-          padding: 10,
-        }}
+        style={localStyles.backButton}
       >
-        <Text style={{ fontSize: 28, color: '#FFF3DC', fontWeight: 'bold' }}>{"<"}</Text>
+        <Ionicons name="chevron-back" size={30} color="#FFF3DC" />
       </Pressable>
 
-      <Image
-        source={require('../../assets/AURA.png')}
-        style={styles.logo}
-        resizeMode="contain"
-      />
+      <View style={styles.container}>
+        <Image source={require('../../assets/AURA.png')} style={[styles.img, { width: 150, height: 150 }]} />
+      </View>
 
-      <Text style={styles.title}> Criar Conta </Text>
-
-      <View style={styles.form}>
+      <View style={[styles.containerButton, { flex: 4 }]}>
+        <Text style={styles.titulo}>Criar Conta</Text>
+        
         <TextInput
           placeholder="Nome Completo"
+          placeholderTextColor="#FFF3DC80"
           value={name}
           onChangeText={setName}
-          style={styles.input}
+          style={localStyles.input}
         />
 
         <TextInput
           placeholder="Email"
+          placeholderTextColor="#FFF3DC80"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
-          style={styles.input}
+          style={localStyles.input}
         />
 
         <TextInput
           placeholder="Telefone"
+          placeholderTextColor="#FFF3DC80"
           value={phone}
           onChangeText={setPhone}
-          style={styles.input}
+          style={localStyles.input}
         />
 
         <TextInput
           placeholder="Senha"
+          placeholderTextColor="#FFF3DC80"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
-          style={styles.input}
+          style={localStyles.input}
         />
 
-        <Pressable style={styles.button} onPress={handleRegister}>
-          <Text style={styles.buttonText}> Cadastrar </Text>
+        <Pressable 
+          style={[styles.btnLogin, { backgroundColor: '#fff3dc', opacity: buttonHovered ? 0.8 : 1 }]} 
+          onPress={handleRegister}
+          onMouseEnter={() => setButtonHovered(true)}
+          onMouseLeave={() => setButtonHovered(false)}
+        >
+          <Text style={[styles.btnLoginText, { color: '#281111' }]}>CADASTRAR</Text>
         </Pressable>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
+const localStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#281111',
-    justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    justifyContent: 'center',
+    backgroundColor: '#281111',
   },
-  logo: {
-    width: 250,
-    height: 250,
-    marginBottom: 30,
+  backButton: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    zIndex: 10,
+    padding: 10,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#FFF3DC',
-  },
-  
   input: {
-    borderWidth: 1,
-    borderColor: '#982546',
-    backgroundColor: '#fff3dc',
-    color: '#281111',
+    backgroundColor: '#fff3dc1a',
+    color: '#FFF3DC',
+    borderWidth: 2,
+    borderColor: '#FFF3DC',
+    width: 300,
     padding: 12,
-    marginBottom: 15,
-    borderRadius: 8,
-    width: 350,
-  },
-  button: {
-    marginTop: 10,
-    alignSelf: 'center',
-    width: 175,
-  borderWidth: 2,
-  borderColor: '#982546',
-  backgroundColor: '#FFF3DC',
-  padding: 15,
-  borderRadius: 8,
-  alignItems: 'center',
-},
-  buttonText: {
-    color: '#982546',
-    fontWeight: 'bold',
+    borderRadius: 20,
+    marginBottom: 10,
+    fontWeight: '500',
   },
 });
