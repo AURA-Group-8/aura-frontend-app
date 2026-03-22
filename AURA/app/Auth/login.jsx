@@ -72,7 +72,7 @@ export default function Login() {
           }}
         />
 
-        <Pressable style={styles.btnLogin}>
+        <Pressable style={styles.btnLogin} onPress={() => router.push('/Client/schedules')}>
           <Text style={styles.btnLoginText}>ENTRAR</Text>
         </Pressable>
       </View>

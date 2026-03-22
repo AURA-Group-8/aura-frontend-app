@@ -42,7 +42,7 @@ export default function SignUp() {
       </Pressable>
 
       <Image
-        source={require('./../assets/AURA.png')}
+        source={require('../../assets/AURA.png')}
         style={styles.logo}
         resizeMode="contain"
       />
