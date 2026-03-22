@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -12,6 +13,7 @@ import {
 
 
 export default function SignUp() {
+  const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -26,6 +28,19 @@ export default function SignUp() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <Pressable 
+        onPress={() => router.back()}
+        style={{
+          position: 'absolute',
+          top: 20,
+          left: 20,
+          zIndex: 10,
+          padding: 10,
+        }}
+      >
+        <Text style={{ fontSize: 28, color: '#FFF3DC', fontWeight: 'bold' }}>{"<"}</Text>
+      </Pressable>
+
       <Image
         source={require('./../assets/AURA.png')}
         style={styles.logo}
