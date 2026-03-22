@@ -53,6 +53,7 @@ export default function Login() {
           style={[styles.btnLogin, { backgroundColor: '#fff3dc', color: '#5c0f25', opacity: buttonHovered ? 0.8 : 1 }]}
           onMouseEnter={() => setButtonHovered(true)}
           onMouseLeave={() => setButtonHovered(false)}
+          onPress={() => router.push("/Client/schedules")}
         >
           <Text style={[styles.btnLoginText, { color: '#5c0f25' }]}>ENTRAR</Text>
         </Pressable>
