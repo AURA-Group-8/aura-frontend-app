@@ -2,15 +2,18 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as NavigationBar from 'expo-navigation-bar';
 import { useEffect } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Platform } from 'react-native';
 
 
 export default function Schedules() {
 
-   useEffect(() => {
+useEffect(() => {
+  if (Platform.OS === 'android') {
     NavigationBar.setVisibilityAsync("hidden");
     NavigationBar.setBehaviorAsync("overlay-swipe");
-  }, []);
+  }
+}, []);
 
   const router = useRouter();
 
@@ -28,7 +31,12 @@ export default function Schedules() {
   return (
     <View style={styles.container}>
 
-      <Text style={styles.title}>Seus Agendamentos</Text>
+      <View style={styles.header}>
+        <Pressable onPress={() => router.replace('/Auth/login')}>
+          <Ionicons name="chevron-back" size={30} color="#281111" />
+        </Pressable>
+        <Text style={styles.title}>Meus Agendamentos</Text>
+      </View>
 
       <ScrollView
         style={styles.scroll}
@@ -93,12 +101,21 @@ const styles = StyleSheet.create({
     paddingTop: 60
   },
 
+  header:{
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 20,
+    paddingHorizontal: 20,
+    marginBottom: 30
+  },
+
   title: {
     fontSize: 26,
     fontWeight: 'bold',
     alignSelf: 'center',
     color: '#281111',
-    marginBottom: 20
   },
 
   scroll: {
