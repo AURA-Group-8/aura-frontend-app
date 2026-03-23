@@ -4,6 +4,7 @@ import * as NavigationBar from 'expo-navigation-bar';
 import { useEffect } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Platform } from 'react-native';
+import AntDesign from '@expo/vector-icons/AntDesign';
 
 
 export default function Schedules() {
@@ -18,14 +19,14 @@ useEffect(() => {
   const router = useRouter();
 
   const agendamentos = [
-    { id: 1, servico: "Corte de Cabelo", data: "10/03/2026 - 14:00", valor: "R$ 40" },
-    { id: 2, servico: "Barba", data: "12/03/2026 - 16:30", valor: "R$ 25" },
-    { id: 3, servico: "Corte + Barba", data: "18/03/2026 - 11:00", valor: "R$ 60" },
-    { id: 4, servico: "Hidratação", data: "22/03/2026 - 13:30", valor: "R$ 50" },
-    { id: 5, servico: "Corte Social", data: "28/03/2026 - 15:00", valor: "R$ 45" },
-    { id: 6, servico: "Corte Infantil", data: "30/03/2026 - 10:00", valor: "R$ 30" },
-    { id: 7, servico: "Corte + Hidratação", data: "05/04/2026 - 14:30", valor: "R$ 80" },
-    { id: 8, servico: "Barba + Hidratação", data: "12/04/2026 - 16:00", valor: "R$ 70" },
+    { id: 1, servico: "Design de Sobrancelhas", data: "10/03/2026 - 14:00", valor: "R$ 40", status: "Concluído" },
+    { id: 2, servico: "Extensão de Cílios", data: "12/03/2026 - 16:30", valor: "R$ 80", status: "Concluído" },
+    { id: 3, servico: "Design com henna", data: "18/03/2026 - 11:00", valor: "R$ 25", status: "Concluído" },
+    { id: 4, servico: "Volume brasileiro de Cílios", data: "22/03/2026 - 13:30", valor: "R$ 30", status: "Concluído" },
+    { id: 5, servico: "Micropigmentação de Sobrancelhas", data: "28/03/2026 - 15:00", valor: "R$ 150", status: "Pendente" },
+    { id: 6, servico: "Lifting de Cílios", data: "30/03/2026 - 10:00", valor: "R$ 60", status: "Pendente" },
+    { id: 7, servico: "Depilação de Sobrancelhas", data: "05/04/2026 - 14:30", valor: "R$ 20", status: "Pendente" },
+    { id: 8, servico: "Volume Russo de Cílios", data: "12/04/2026 - 16:00", valor: "R$ 100", status: "Pendente" },
   ];
 
   return (
@@ -56,6 +57,10 @@ useEffect(() => {
               {item.valor}
             </Text>
 
+            <Text style={[styles.status, item.status === 'Concluído' ? styles.statusConcluido : styles.statusPendente]}>
+              Status: {item.status}
+            </Text>
+
           </View>
         ))}
 
@@ -66,21 +71,18 @@ useEffect(() => {
 
    <Pressable 
     style={styles.navItem}
-    onPress={() => router.push('/servicos')}
   >
-    <Ionicons name="cut-outline" size={28} color="#982546" />
+    <AntDesign name="schedule" size={28} color="#982546" />
   </Pressable>
 
   <Pressable 
     style={styles.navItem}
-    onPress={() => router.push('/carrinho')}
   >
-    <Ionicons name="cart-outline" size={28} color="#982546" />
+    <AntDesign name="clock-circle" size={28} color="#982546" />
   </Pressable>
 
   <Pressable 
     style={styles.navItem}
-    onPress={() => router.push('/perfil')}
   >
     <Ionicons name="person-outline" size={28} color="#982546" />
   </Pressable>
@@ -145,6 +147,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontWeight: 'bold',
     color: '#982546'
+  },
+
+  status: {
+    marginTop: 8,
+    fontWeight: 'bold',
+  },
+
+  statusConcluido: {
+    color: 'green',
+  },
+
+  statusPendente: {
+    color: 'red',
   },
 
   navbar: {
