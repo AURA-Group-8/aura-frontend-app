@@ -11,6 +11,37 @@ export default function Login() {
   const [senha, setSenha] = useState('');
   const [buttonHovered, setButtonHovered] = useState(false);
 
+  const [emailError, setEmailError] = useState('');
+  const [senhaError, setSenhaError] = useState('');
+
+  const handleLogin = () => {
+    let hasError = false;
+
+    if (!email.trim()) {
+      setEmailError('Email é obrigatório');
+      hasError = true;
+    } else if (!email.includes('@') || !email.includes('.')) {
+      setEmailError('Email inválido');
+      hasError = true;
+    } else {
+      setEmailError('');
+    }
+
+    if (!senha.trim()) {
+      setSenhaError('Senha é obrigatória');
+      hasError = true;
+    } else if (senha.length < 6) {
+      setSenhaError('Senha deve ter pelo menos 6 dígitos');
+      hasError = true;
+    } else {
+      setSenhaError('');
+    }
+
+    if (!hasError) {
+      router.push("/Client/schedules");
+    }
+  };
+
   return (
     <LinearGradient
       colors={['#4f1223', '#8a1c3a']}
@@ -39,6 +70,7 @@ export default function Login() {
           onChangeText={setEmail}
           style={localStyles.input}
         />
+        {emailError ? <Text style={localStyles.error}>{emailError}</Text> : null}
 
         <TextInput
           placeholder="Senha"
@@ -48,12 +80,13 @@ export default function Login() {
           secureTextEntry
           style={localStyles.input}
         />
+        {senhaError ? <Text style={localStyles.error}>{senhaError}</Text> : null}
 
         <Pressable 
           style={[styles.btnLogin, { backgroundColor: '#fff3dc', color: '#5c0f25', opacity: buttonHovered ? 0.8 : 1 }]}
           onMouseEnter={() => setButtonHovered(true)}
           onMouseLeave={() => setButtonHovered(false)}
-          onPress={() => router.push("/Client/schedules")}
+          onPress={handleLogin}
         >
           <Text style={[styles.btnLoginText, { color: '#5c0f25' }]}>ENTRAR</Text>
         </Pressable>
@@ -85,5 +118,9 @@ const localStyles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 10,
     fontWeight: '500',
+  },
+  error: {
+    color: '#fa8585',
+    fontSize: 12,
   },
 });

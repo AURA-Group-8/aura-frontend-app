@@ -12,9 +12,52 @@ export default function SignUp() {
   const [password, setPassword] = useState('');
   const [buttonHovered, setButtonHovered] = useState(false);
 
+  const [nameError, setNameError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
   const handleRegister = () => {
-    console.log(name, email, phone, password);
-    router.push("/Auth/login");
+    let hasError = false;
+
+    if (!name.trim()) {
+      setNameError('Nome é obrigatório');
+      hasError = true;
+    } else {
+      setNameError('');
+    }
+
+    if (!email.trim()) {
+      setEmailError('Email é obrigatório');
+      hasError = true;
+    } else if (!email.includes('@') || !email.includes('.')) {
+      setEmailError('Email inválido');
+      hasError = true;
+    } else {
+      setEmailError('');
+    }
+
+    if (!phone.trim()) {
+      setPhoneError('Telefone é obrigatório');
+      hasError = true;
+    } else {
+      setPhoneError('');
+    }
+
+    if (!password.trim()) {
+      setPasswordError('Senha é obrigatória');
+      hasError = true;
+    } else if (password.length < 6) {
+      setPasswordError('Senha deve ter pelo menos 6 dígitos');
+      hasError = true;
+    } else {
+      setPasswordError('');
+    }
+
+    if (!hasError) {
+      console.log(name, email, phone, password);
+      router.push("/Auth/login");
+    }
   };
 
   return (
@@ -40,6 +83,7 @@ export default function SignUp() {
           onChangeText={setName}
           style={localStyles.input}
         />
+        {nameError ? <Text style={localStyles.error}>{nameError}</Text> : null}
 
         <TextInput
           placeholder="Email"
@@ -49,6 +93,7 @@ export default function SignUp() {
           keyboardType="email-address"
           style={localStyles.input}
         />
+        {emailError ? <Text style={localStyles.error}>{emailError}</Text> : null}
 
         <TextInput
           placeholder="Telefone"
@@ -57,6 +102,7 @@ export default function SignUp() {
           onChangeText={setPhone}
           style={localStyles.input}
         />
+        {phoneError ? <Text style={localStyles.error}>{phoneError}</Text> : null}
 
         <TextInput
           placeholder="Senha"
@@ -66,6 +112,7 @@ export default function SignUp() {
           secureTextEntry
           style={localStyles.input}
         />
+        {passwordError ? <Text style={localStyles.error}>{passwordError}</Text> : null}
 
         <Pressable 
           style={[styles.btnLogin, { backgroundColor: '#fff3dc', opacity: buttonHovered ? 0.8 : 1 }]} 
@@ -104,5 +151,9 @@ const localStyles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 10,
     fontWeight: '500',
+  },
+  error: {
+    color: '#fa8585',
+    fontSize: 12,
   },
 });
