@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Platform } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import Navbar from '../Navbar';
+import Navbar from './_Component/Navbar';
 
 
 export default function Schedules() {
