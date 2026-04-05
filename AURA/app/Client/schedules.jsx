@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Platform } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import Navbar from './_Component/Navbar';
 
 
 export default function Schedules() {
@@ -71,27 +72,11 @@ export default function Schedules() {
       </ScrollView>
 
 
-      <View style={styles.navbar}>
+    <View>
 
-        <Pressable
-          style={styles.navItem}
-        >
-          <AntDesign name="schedule" size={28} color="#982546" />
-        </Pressable>
+   <Navbar/>
 
-        <Pressable
-          style={styles.navItem}
-        >
-          <AntDesign name="clock-circle" size={28} color="#982546" />
-        </Pressable>
-
-        <Pressable
-          style={styles.navItem}
-        >
-          <Ionicons name="person-outline" size={28} color="#982546" />
-        </Pressable>
-
-      </View>
+  </View>
 
 
     </View>
@@ -164,25 +149,7 @@ const styles = StyleSheet.create({
 
   statusPendente: {
     color: 'red',
-  },
-
-  navbar: {
-    height: 70,
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderColor: '#982546',
-    backgroundColor: '#fff3dc',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    borderRadius: 12,
-  },
-
-  navItem: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 25
-  },
+  }
 
   button: {
     backgroundColor: '#982546',
