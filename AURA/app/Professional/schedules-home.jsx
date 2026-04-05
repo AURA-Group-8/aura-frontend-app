@@ -5,7 +5,8 @@ import { useEffect } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Platform } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import Navbar from './_Component/Navbar';
+
+import CardSchedule from './_Components/card-schedule';
 
 
 export default function Schedules() {
@@ -30,6 +31,7 @@ export default function Schedules() {
     { id: 8, servico: "Volume Russo de Cílios", data: "12/04/2026 - 16:00", valor: "R$ 100", status: "Pendente" },
   ];
 
+
   return (
     <View style={styles.container}>
 
@@ -44,39 +46,40 @@ export default function Schedules() {
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-
+        
         <Pressable style={styles.button}>
           <Text style={{ color: 'white', fontWeight: 'bold' }}>+ Novo Agendamento</Text>
         </Pressable>
 
         {agendamentos.map((item) => (
-          <View key={item.id} style={styles.card}>
-
-            <Text style={styles.servico}>{item.servico}</Text>
-
-            <Text style={styles.info}>
-              Data: {item.data}
-            </Text>
-
-            <Text style={styles.valor}>
-              {item.valor}
-            </Text>
-
-            <Text style={[styles.status, item.status === 'Concluído' ? styles.statusConcluido : styles.statusPendente]}>
-              Status: {item.status}
-            </Text>
-
-          </View>
+          <CardSchedule key={item.id} schedule={item} />
         ))}
+        
 
       </ScrollView>
 
 
-    <View>
+      <View style={styles.navbar}>
 
-   <Navbar/>
+        <Pressable
+          style={styles.navItem}
+        >
+          <AntDesign name="schedule" size={28} color="#982546" />
+        </Pressable>
 
-  </View>
+        <Pressable
+          style={styles.navItem}
+        >
+          <AntDesign name="clock-circle" size={28} color="#982546" />
+        </Pressable>
+
+        <Pressable
+          style={styles.navItem}
+        >
+          <Ionicons name="person-outline" size={28} color="#982546" />
+        </Pressable>
+
+      </View>
 
 
     </View>
@@ -149,7 +152,25 @@ const styles = StyleSheet.create({
 
   statusPendente: {
     color: 'red',
-  }
+  },
+
+  navbar: {
+    height: 70,
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderColor: '#982546',
+    backgroundColor: '#fff3dc',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    borderRadius: 12,
+  },
+
+  navItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 25
+  },
 
   button: {
     backgroundColor: '#982546',
