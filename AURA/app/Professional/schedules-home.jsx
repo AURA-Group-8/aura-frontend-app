@@ -6,6 +6,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Platform } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 
+import CardSchedule from './_Components/card-schedule';
+
 
 export default function Schedules() {
 
@@ -29,6 +31,7 @@ export default function Schedules() {
     { id: 8, servico: "Volume Russo de Cílios", data: "12/04/2026 - 16:00", valor: "R$ 100", status: "Pendente" },
   ];
 
+
   return (
     <View style={styles.container}>
 
@@ -43,30 +46,15 @@ export default function Schedules() {
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-
+        
         <Pressable style={styles.button}>
           <Text style={{ color: 'white', fontWeight: 'bold' }}>+ Novo Agendamento</Text>
         </Pressable>
 
         {agendamentos.map((item) => (
-          <View key={item.id} style={styles.card}>
-
-            <Text style={styles.servico}>{item.servico}</Text>
-
-            <Text style={styles.info}>
-              Data: {item.data}
-            </Text>
-
-            <Text style={styles.valor}>
-              {item.valor}
-            </Text>
-
-            <Text style={[styles.status, item.status === 'Concluído' ? styles.statusConcluido : styles.statusPendente]}>
-              Status: {item.status}
-            </Text>
-
-          </View>
+          <CardSchedule key={item.id} schedule={item} />
         ))}
+        
 
       </ScrollView>
 
