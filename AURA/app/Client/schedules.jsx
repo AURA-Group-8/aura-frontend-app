@@ -10,12 +10,12 @@ import Navbar from './_Component/Navbar';
 
 export default function Schedules() {
 
-useEffect(() => {
-  if (Platform.OS === 'android') {
-    NavigationBar.setVisibilityAsync("hidden");
-    NavigationBar.setBehaviorAsync("overlay-swipe");
-  }
-}, []);
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      NavigationBar.setVisibilityAsync("hidden");
+      NavigationBar.setBehaviorAsync("overlay-swipe");
+    }
+  }, []);
 
   const router = useRouter();
 
@@ -44,6 +44,10 @@ useEffect(() => {
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
+
+        <Pressable style={styles.button}>
+          <Text style={{ color: 'white', fontWeight: 'bold' }}>+ Novo Agendamento</Text>
+        </Pressable>
 
         {agendamentos.map((item) => (
           <View key={item.id} style={styles.card}>
@@ -75,7 +79,7 @@ useEffect(() => {
   </View>
 
 
-      </View>
+    </View>
 
   );
 }
@@ -88,14 +92,14 @@ const styles = StyleSheet.create({
     paddingTop: 60
   },
 
-  header:{
+  header: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
     gap: 20,
     paddingHorizontal: 20,
-    marginBottom: 30
+    marginBottom: 40
   },
 
   title: {
@@ -145,6 +149,13 @@ const styles = StyleSheet.create({
 
   statusPendente: {
     color: 'red',
-  }
+  },
 
+  button: {
+    backgroundColor: '#982546',
+    padding: 12,
+    borderRadius: 20,
+    marginBottom: 20,
+
+  },
 });

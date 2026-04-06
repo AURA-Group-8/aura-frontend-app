@@ -3,6 +3,8 @@ import { styles } from '../../styles/styles';
 import { Text, View, Image, Pressable, TextInput, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import axios from 'axios';
+import CardPopUp from '../Professional/_Components/card-popUp';
 
 export default function SignUp() {
   const router = useRouter();
@@ -17,7 +19,22 @@ export default function SignUp() {
   const [phoneError, setPhoneError] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
-  const handleRegister = () => {
+  const API_URL = process.env.API_URL || 'http://localhost:8080';
+
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [popupMessage, setPopupMessage] = useState('');
+  const [popupType, setPopupType] = useState('success');
+
+  function formatPhone(value) {
+    const digits = value.replace(/\D/g, '');
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+  }
+
+  async function SignUp() {
+
     let hasError = false;
 
     if (!name.trim()) {
@@ -37,8 +54,12 @@ export default function SignUp() {
       setEmailError('');
     }
 
+    const phoneDigits = phone.replace(/\D/g, '');
     if (!phone.trim()) {
       setPhoneError('Telefone é obrigatório');
+      hasError = true;
+    } else if (phoneDigits.length < 10) {
+      setPhoneError('Telefone inválido');
       hasError = true;
     } else {
       setPhoneError('');
@@ -54,15 +75,44 @@ export default function SignUp() {
       setPasswordError('');
     }
 
-    if (!hasError) {
-      console.log(name, email, phone, password);
-      router.push("/Auth/login");
+    if (hasError) {
+      return;
+    } else {
+
+      const response = await axios(`${API_URL}/api/usuarios`, {
+
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        data: JSON.stringify({
+          username: name,
+          email: email,
+          phone: phone.replace(/\D/g, ''),
+          password: password
+        }),
+
+      });
+
+      if (response.status === 201) {
+        setPopupMessage('Cadastro realizado com sucesso!');
+        setPopupType('success');
+        setPopupVisible(true);
+      } else {
+        setPopupMessage('Erro ao realizar cadastro. Tente novamente.');
+        setPopupType('error');
+        setPopupVisible(true);
+
+      }
     }
-  };
+
+  }
+
 
   return (
     <View style={localStyles.container}>
-      <Pressable 
+
+      <Pressable
         onPress={() => router.back()}
         style={localStyles.backButton}
       >
@@ -75,7 +125,7 @@ export default function SignUp() {
 
       <View style={[styles.containerButton, { flex: 4 }]}>
         <Text style={styles.titulo}>Criar Conta</Text>
-        
+
         <TextInput
           placeholder="Nome Completo"
           placeholderTextColor="#FFF3DC80"
@@ -99,8 +149,10 @@ export default function SignUp() {
           placeholder="Telefone"
           placeholderTextColor="#FFF3DC80"
           value={phone}
-          onChangeText={setPhone}
+          onChangeText={(text) => setPhone(formatPhone(text))}
+          keyboardType="phone-pad"
           style={localStyles.input}
+          maxLength={16}
         />
         {phoneError ? <Text style={localStyles.error}>{phoneError}</Text> : null}
 
@@ -114,15 +166,28 @@ export default function SignUp() {
         />
         {passwordError ? <Text style={localStyles.error}>{passwordError}</Text> : null}
 
-        <Pressable 
-          style={[styles.btnLogin, { backgroundColor: '#fff3dc', opacity: buttonHovered ? 0.8 : 1 }]} 
-          onPress={handleRegister}
+        <Pressable
+          style={[styles.btnLogin, { backgroundColor: '#fff3dc', opacity: buttonHovered ? 0.8 : 1 }]}
+          onPress={SignUp}
           onMouseEnter={() => setButtonHovered(true)}
           onMouseLeave={() => setButtonHovered(false)}
         >
           <Text style={[styles.btnLoginText, { color: '#281111' }]}>CADASTRAR</Text>
         </Pressable>
       </View>
+
+      <CardPopUp
+        visible={popupVisible}
+        message={popupMessage}
+        type={popupType}
+        onClose={() => {
+          setPopupVisible(false);
+
+          if (popupType === 'success') {
+            router.push('/Auth/login');
+          }
+        }}
+      />
     </View>
   );
 }
