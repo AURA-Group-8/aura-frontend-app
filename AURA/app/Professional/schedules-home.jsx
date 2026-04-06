@@ -1,36 +1,79 @@
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as NavigationBar from 'expo-navigation-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Platform } from 'react-native';
-import AntDesign from '@expo/vector-icons/AntDesign';
-
+import axios from 'axios';
+import NavbarPro from './_Components/NavbarPro';
 import CardSchedule from './_Components/card-schedule';
 
-
 export default function Schedules() {
+  const [agendamentos, setAgendamentos] = useState([]);
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [sortBy, setSortBy] = useState('id');
+  const [direction, setDirection] = useState('ASC');
+  const API_URL = process.env.API_URL || 'http://localhost:8080';
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
 
   useEffect(() => {
     if (Platform.OS === 'android') {
       NavigationBar.setVisibilityAsync("hidden");
       NavigationBar.setBehaviorAsync("overlay-swipe");
     }
-  }, []);
+    getSchedules();
+  }, [page, size, sortBy, direction]);
 
   const router = useRouter();
 
-  const agendamentos = [
-    { id: 1, servico: "Design de Sobrancelhas", data: "10/03/2026 - 14:00", valor: "R$ 40", status: "Concluído" },
-    { id: 2, servico: "Extensão de Cílios", data: "12/03/2026 - 16:30", valor: "R$ 80", status: "Concluído" },
-    { id: 3, servico: "Design com henna", data: "18/03/2026 - 11:00", valor: "R$ 25", status: "Concluído" },
-    { id: 4, servico: "Volume brasileiro de Cílios", data: "22/03/2026 - 13:30", valor: "R$ 30", status: "Concluído" },
-    { id: 5, servico: "Micropigmentação de Sobrancelhas", data: "28/03/2026 - 15:00", valor: "R$ 150", status: "Pendente" },
-    { id: 6, servico: "Lifting de Cílios", data: "30/03/2026 - 10:00", valor: "R$ 60", status: "Pendente" },
-    { id: 7, servico: "Depilação de Sobrancelhas", data: "05/04/2026 - 14:30", valor: "R$ 20", status: "Pendente" },
-    { id: 8, servico: "Volume Russo de Cílios", data: "12/04/2026 - 16:00", valor: "R$ 100", status: "Pendente" },
-  ];
+  async function getSchedules() {
+    try {
+      const response = await axios.get(`${API_URL}/api/agendamentos/card`, {
+        headers: authHeaders,
+        params: {
+          page,
+          size,
+          sortBy,
+          direction,
+        },
+      });
 
+      const responseData = response.data;
+      const content = Array.isArray(responseData.content)
+        ? responseData.content
+        : Array.isArray(responseData)
+          ? responseData
+          : [];
+
+      const formattedSchedules = content.map((agendamento) => ({
+        id: agendamento.idScheduling,
+        userName: agendamento.userName,
+        jobsNames: agendamento.jobsNames,
+        startDatetime: agendamento.startDatetime,
+        endDatetime: agendamento.endDatetime,
+        status: agendamento.status,
+        paymentStatus: agendamento.paymentStatus,
+        totalPrice: agendamento.totalPrice,
+        feedback: agendamento.feedback,
+      }));
+
+      setAgendamentos(formattedSchedules);
+      setTotalPages(responseData.totalPages ?? 1);
+      setTotalItems(responseData.totalElements ?? content.length);
+      setPage(responseData.page ?? responseData.pageNumber ?? page);
+      setSize(responseData.size ?? responseData.pageSize ?? size);
+    }
+    catch (error) {
+      console.error('Erro ao buscar agendamentos:', error);
+      setAgendamentos([]);
+      setTotalPages(1);
+      setTotalItems(0);
+    }
+  }
 
   return (
     <View style={styles.container}>
@@ -46,41 +89,53 @@ export default function Schedules() {
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        
-        <Pressable style={styles.button}>
+
+        <Pressable
+          style={({ pressed, hovered }) => [
+            styles.button,
+            pressed && styles.buttonPressed,
+            hovered && styles.buttonHover,
+          ]}
+          onPress={() => router.push('/Professional/new-schedule')}
+        >
           <Text style={{ color: 'white', fontWeight: 'bold' }}>+ Novo Agendamento</Text>
         </Pressable>
 
-        {agendamentos.map((item) => (
-          <CardSchedule key={item.id} schedule={item} />
-        ))}
-        
+        {agendamentos.length > 0 ? (
+          agendamentos.map((item) => (
+            <CardSchedule key={item.id} schedule={item} />
+          ))
+        ) : (
+          <View style={styles.emptyCard}>
+            <Ionicons name="calendar-outline" size={48} color="#982546" />
+            <Text style={styles.emptyText}>Sem novos agendamentos</Text>
+          </View>
+        )}
 
+        <View style={styles.paginationContainer}>
+          <Pressable
+            style={[styles.pageButton, page <= 0 && styles.pageButtonDisabled]}
+            disabled={page <= 0}
+            onPress={() => setPage((current) => Math.max(0, current - 1))}
+          >
+            <Text style={styles.pageButtonText}>Anterior</Text>
+          </Pressable>
+
+          <Text style={styles.pageInfo}>
+            Página {page + 1} de {totalPages}
+          </Text>
+
+          <Pressable
+            style={[styles.pageButton, page >= totalPages - 1 && styles.pageButtonDisabled]}
+            disabled={page >= totalPages - 1}
+            onPress={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
+          >
+            <Text style={styles.pageButtonText}>Próxima</Text>
+          </Pressable>
+        </View>
       </ScrollView>
 
-
-      <View style={styles.navbar}>
-
-        <Pressable
-          style={styles.navItem}
-        >
-          <AntDesign name="schedule" size={28} color="#982546" />
-        </Pressable>
-
-        <Pressable
-          style={styles.navItem}
-        >
-          <AntDesign name="clock-circle" size={28} color="#982546" />
-        </Pressable>
-
-        <Pressable
-          style={styles.navItem}
-        >
-          <Ionicons name="person-outline" size={28} color="#982546" />
-        </Pressable>
-
-      </View>
-
+      <NavbarPro active="Agenda" />
 
     </View>
 
@@ -96,13 +151,11 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
     gap: 20,
     paddingHorizontal: 20,
-    marginBottom: 40
+    marginBottom: 20,
   },
 
   title: {
@@ -113,6 +166,7 @@ const styles = StyleSheet.create({
   },
 
   scroll: {
+    flex: 1,
     paddingHorizontal: 20
   },
 
@@ -154,6 +208,26 @@ const styles = StyleSheet.create({
     color: 'red',
   },
 
+  emptyCard: {
+    backgroundColor: 'white',
+    padding: 40,
+    borderRadius: 10,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#982546',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 200,
+  },
+
+  emptyText: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#982546',
+    textAlign: 'center',
+  },
+
   navbar: {
     height: 70,
     flexDirection: 'row',
@@ -177,6 +251,44 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 20,
     marginBottom: 20,
-
+    alignItems: 'center',
   },
+
+  buttonHover: {
+    backgroundColor: '#7a1f40',
+  },
+
+  buttonPressed: {
+    opacity: 0.85,
+  },
+
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+    paddingHorizontal: 10,
+  },
+
+  pageButton: {
+    backgroundColor: '#982546',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+  },
+
+  pageButtonDisabled: {
+    backgroundColor: '#c49a98',
+  },
+
+  pageButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+
+  pageInfo: {
+    color: '#281111',
+    fontWeight: '700',
+  }
 });

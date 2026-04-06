@@ -1,15 +1,22 @@
 import { View, Pressable, Text, StyleSheet } from 'react-native'
+import { useRouter } from 'expo-router'
 import Ionicons from '@expo/vector-icons/Ionicons'
 
 const navItems = [
-  { label: 'Agenda', icon: 'calendar-outline' },
-  { label: 'Serviços', icon: 'briefcase-outline' },
-  { label: 'Finanças', icon: 'wallet-outline' },
-  { label: 'Clientes', icon: 'people-outline' },
-  { label: 'Mais', icon: 'menu-outline' },
+  { label: 'Agenda', icon: 'calendar-outline', route: '/Professional/schedules-home' },
+  { label: 'Serviços', icon: 'briefcase-outline', route: '/Professional/services' },
+  { label: 'Finanças', icon: 'wallet-outline', route: '/Professional/finances' },
+  { label: 'Clientes', icon: 'people-outline', route: '/Professional/clients' },
+  { label: 'Mais', icon: 'menu-outline', route: '/Professional/more' },
 ]
 
-export default function NavbarPro({ active = 'Agenda', onPress = () => {} }) {
+export default function NavbarPro({ active = 'Agenda' }) {
+  const router = useRouter()
+
+  const handleNavigation = (item) => {
+    router.push(item.route)
+  }
+
   return (
     <View style={styles.navbar}>
       {navItems.map((item) => {
@@ -21,7 +28,7 @@ export default function NavbarPro({ active = 'Agenda', onPress = () => {} }) {
               styles.navItem,
               pressed && styles.navItemPressed,
             ]}
-            onPress={() => onPress(item.label)}
+            onPress={() => handleNavigation(item)}
           >
             <Ionicons
               name={item.icon}

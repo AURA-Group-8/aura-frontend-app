@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
 
   statusPendente: {
     color: 'red',
-  }
+  },
 
   button: {
     backgroundColor: '#982546',

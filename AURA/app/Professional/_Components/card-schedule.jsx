@@ -1,46 +1,178 @@
+import { useState } from 'react'
+import { View, Text, StyleSheet, Pressable } from 'react-native'
+import Ionicons from '@expo/vector-icons/Ionicons'
+import axios from 'axios'
+import { Picker } from '@react-native-picker/picker'
 
-import { View, Text, StyleSheet, Pressable } from 'react-native';
 
 export default function CardSchedule({ schedule }) {
+
+  const API_URL = process.env.API_URL || 'http://localhost:8080';
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
+
+  const [paymentOpen, setPaymentOpen] = useState(false)
+  const [scheduleStatus, setScheduleStatus] = useState(
+    schedule.status || 'PENDENTE'
+  )
+
+  const [paymentStatus, setPaymentStatus] = useState(
+    schedule.paymentStatus || 'PENDENTE'
+  )
+
+  async function updateSchedule(updatedFields) {
+    try {
+      const payload = {
+        id: schedule.id,
+        status: (
+          updatedFields.status ?? scheduleStatus
+        ).toUpperCase(),
+
+        paymentStatus: (
+          updatedFields.paymentStatus ?? paymentStatus
+        ).toUpperCase(),
+      }
+
+      console.log('PAYLOAD ENVIADO:', payload)
+
+      const response = await axios.patch(
+        `${API_URL}/api/agendamentos/${schedule.id}`,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders,
+          },
+        }
+      )
+
+      console.log('Atualizado com sucesso:', response.data)
+    } catch (error) {
+      console.error(
+        'Erro ao atualizar:',
+        error.response?.data || error.message
+      )
+    }
+  }
+
+  const current = schedule
+  const startDatetime = current.startDatetime ? new Date(current.startDatetime).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }) : current.data || '-'
+  const endDatetime = current.endDatetime ? new Date(current.endDatetime).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }) : null
+  const totalPrice = current.totalPrice != null ? `R$ ${Number(current.totalPrice).toFixed(2).replace('.', ',')}` : current.valor || 'R$ 0,00'
+
   return (
     <View style={styles.card}>
       <View style={styles.topRow}>
         <View>
-          <Text style={styles.name}>{schedule.cliente ?? 'Cliente'}</Text>
-          <Text style={styles.servico}>{schedule.servico}</Text>
+          <Text style={styles.name}>{current.userName ?? 'Cliente'}</Text>
+          <Text style={styles.servico}>{current.jobsNames?.length > 0 ? current.jobsNames.join(', ') : 'Agendamento'}</Text>
         </View>
-        <View style={[styles.statusBadge, schedule.status === 'Concluído' ? styles.statusConfirmed : styles.statusPending]}>
-          <Text style={styles.statusText}>{schedule.status}</Text>
+        <View style={[styles.statusBadge, current.status === 'Concluído' ? styles.statusConfirmed : styles.statusPending]}>
+          <Text style={styles.statusText}>{scheduleStatus}</Text>
         </View>
       </View>
 
       <View style={styles.detailsRow}>
         <View>
-          <Text style={styles.label}>Data</Text>
-          <Text style={styles.detail}>{schedule.data}</Text>
+          <Text style={styles.label}>Início</Text>
+          <Text style={styles.detail}>{startDatetime}</Text>
         </View>
-        <View style={styles.priceBox}>
-          <Text style={styles.label}>Valor</Text>
-          <Text style={styles.price}>{schedule.valor}</Text>
+        {endDatetime && (
+          <View style={styles.priceBox}>
+            <Text style={styles.label}>Fim</Text>
+            <Text style={styles.detail}>{endDatetime}</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={{ ...styles.detailsRow, justifyContent: 'flex-start', gap: 20 }}>
+        <View>
+          <Text style={styles.label}>Total</Text>
+          <Text style={styles.price}>{totalPrice}</Text>
+        </View>
+        <View style={styles.paymentContainer}>
+          <Text style={styles.label}>Pagamento</Text>
+
+          <Pressable
+            style={styles.selectButton}
+            onPress={() => {
+              if (paymentStatus !== 'PAGO') {
+                setPaymentOpen(!paymentOpen)
+              }
+            }}
+          >
+            <Text style={styles.detail}>
+              {paymentStatus === 'PAGO' ? 'Pago' : 'Pendente'}
+            </Text>
+
+            {paymentStatus !== 'PAGO' && (
+              <Ionicons
+                name={paymentOpen ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color="#281111"
+              />
+            )}
+          </Pressable>
+
+          {paymentOpen && paymentStatus !== 'PAGO' && (
+            <View style={styles.dropdown}>
+              <Pressable
+                style={styles.dropdownItem}
+                onPress={() => {
+                  setPaymentStatus('PAGO')
+                  setPaymentOpen(false)
+
+                  updateSchedule({
+                    paymentStatus: 'PAGO'
+                  })
+                }}
+              >
+                <Text style={styles.detail}>Pago</Text>
+              </Pressable>
+            </View>
+          )}
         </View>
       </View>
 
-      <View style={{...styles.detailsRow, justifyContent: 'flex-start', gap: 20}}>
-        <Text style={styles.label}>Pago</Text>
-        <Text style={styles.detail}>{schedule.pago ? 'Sim' : 'Não'}</Text>
-      </View>
+      {scheduleStatus !== 'FEITO' && (
+        <View style={styles.actionsRow}>
+          <Pressable
+            style={[styles.actionButton, styles.cancelButton]}
+            onPress={() => {
+              setScheduleStatus('CANCELADO')
+              updateSchedule({ status: 'CANCELADO' })
+            }}
+          >
+            <Text style={styles.actionText}>✕</Text>
+          </Pressable>
 
-      <View style={styles.actionsRow}>
-        <Pressable style={[styles.actionButton, styles.cancelButton]}>
-          <Text style={styles.actionText}>✕</Text>
-        </Pressable>
-        <Pressable style={[styles.actionButton, styles.confirmButton]}>
-          <Text style={styles.actionText}>✓</Text>
-        </Pressable>
-      </View>
+          <Pressable
+            style={[styles.actionButton, styles.confirmButton]}
+            onPress={() => {
+              setScheduleStatus('FEITO')
+              updateSchedule({ status: 'FEITO' })
+            }}
+          >
+            <Text style={styles.actionText}>✓</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
-  );
+  )
 }
+
 
 const styles = StyleSheet.create({
   card: {
@@ -153,6 +285,29 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#281111',
   },
-});
 
+  errorText: {
+    fontSize: 14,
+    color: '#d32f2f',
+    textAlign: 'center',
+    marginVertical: 10,
+  },
 
+  selectButton: {
+    marginTop: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#d4b98f',
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  picker: {
+    width: '100%',
+    height: 40
+  },
+
+})

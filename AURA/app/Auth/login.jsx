@@ -57,9 +57,13 @@ export default function Login() {
             password: senha
           })        
 
-        
         });
-          console.log('Login response:', loginResponse);
+        console.log('Login response:', loginResponse);
+
+        const token = loginResponse.data?.token || loginResponse.data?.accessToken || loginResponse.data?.access_token;
+        if (typeof window !== 'undefined' && token) {
+          localStorage.setItem('token', token);
+        }
 
         if (loginResponse.status === 200) {
           const userResponse = await axios.get(`${API_URL}/api/usuarios`);
