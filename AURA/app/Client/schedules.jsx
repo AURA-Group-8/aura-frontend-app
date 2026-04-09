@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Platform } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import Navbar from '../Navbar';
+import Navbar from '../Components/navbar';
 
 
 export default function Schedules() {
@@ -67,15 +67,13 @@ useEffect(() => {
 
       </ScrollView>
 
-
     <View>
 
    <Navbar/>
 
   </View>
 
-
-      </View>
+</View>
 
   );
 }
