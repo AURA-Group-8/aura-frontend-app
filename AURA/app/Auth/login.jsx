@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { styles } from '../../styles/styles';
 import { Text, View, Image, Pressable, TextInput, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import axios from 'axios';
+import CardPopUp from '../Professional/_Components/card-popUp';
 
 export default function Login() {
   const router = useRouter();
@@ -14,7 +16,13 @@ export default function Login() {
   const [emailError, setEmailError] = useState('');
   const [senhaError, setSenhaError] = useState('');
 
-  const handleLogin = () => {
+  const API_URL = process.env.API_URL || 'http://localhost:8080';
+
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [popupMessage, setPopupMessage] = useState('');
+  const [popupType, setPopupType] = useState('success');
+
+  async function handleLogin() {
     let hasError = false;
 
     if (!email.trim()) {
@@ -38,7 +46,55 @@ export default function Login() {
     }
 
     if (!hasError) {
-      router.push("/Client/schedules");
+      try {
+        const loginResponse = await axios(`${API_URL}/api/usuarios/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          data: JSON.stringify({
+            email: email,
+            password: senha
+          })        
+
+        
+        });
+          console.log('Login response:', loginResponse);
+
+        if (loginResponse.status === 200) {
+          const userResponse = await axios.get(`${API_URL}/api/usuarios`);
+          const users = userResponse.data;
+
+          const userData = users[0];
+
+          if (userData.role.id === 1) {
+            setPopupMessage('Login realizado com sucesso!');
+            setPopupType('success');
+            setPopupVisible(true);
+
+            setTimeout(() => {
+              router.push('/Professional/schedules-home');
+            }, 1500);
+          } else {
+            setPopupMessage('Login realizado com sucesso!');
+            setPopupType('success');
+            setPopupVisible(true);
+
+            setTimeout(() => {
+              router.push('/Client/schedules');
+            }, 1500);
+          }
+        } else {
+          setPopupMessage('Erro ao realizar login. Tente novamente.');
+          setPopupType('error');
+          setPopupVisible(true);
+        }
+      } catch (error) {
+        console.error('Erro no login:', error);
+        setPopupMessage('Erro ao realizar login. Tente novamente.');
+        setPopupType('error');
+        setPopupVisible(true);
+      }
     }
   };
 
@@ -49,7 +105,7 @@ export default function Login() {
       end={{ x: 0, y: 0 }}
       style={localStyles.container}
     >
-      <Pressable 
+      <Pressable
         onPress={() => router.back()}
         style={localStyles.backButton}
       >
@@ -62,7 +118,7 @@ export default function Login() {
 
       <View style={[styles.containerButton, { flex: 2 }]}>
         <Text style={styles.titulo}>Login</Text>
-        
+
         <TextInput
           placeholder="Email"
           placeholderTextColor="#FFF3DC80"
@@ -81,8 +137,11 @@ export default function Login() {
           style={localStyles.input}
         />
         {senhaError ? <Text style={localStyles.error}>{senhaError}</Text> : null}
+        <Link href="/Auth/forgot-password">
+          <Text style={{ color: '#FFF3DC', textDecorationLine: 'underline' }}>Esqueci minha senha</Text>
+        </Link>
 
-        <Pressable 
+        <Pressable
           style={[styles.btnLogin, { backgroundColor: '#fff3dc', color: '#5c0f25', opacity: buttonHovered ? 0.8 : 1 }]}
           onMouseEnter={() => setButtonHovered(true)}
           onMouseLeave={() => setButtonHovered(false)}
@@ -90,6 +149,13 @@ export default function Login() {
         >
           <Text style={[styles.btnLoginText, { color: '#5c0f25' }]}>ENTRAR</Text>
         </Pressable>
+
+        <CardPopUp
+          visible={popupVisible}
+          message={popupMessage}
+          type={popupType}
+          onClose={() => setPopupVisible(false)}
+        />
       </View>
     </LinearGradient>
   );
@@ -116,7 +182,7 @@ const localStyles = StyleSheet.create({
     width: 300,
     padding: 12,
     borderRadius: 20,
-    marginBottom: 10,
+    marginBottom: 5,
     fontWeight: '500',
   },
   error: {
