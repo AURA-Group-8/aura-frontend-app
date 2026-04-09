@@ -113,7 +113,7 @@ export default function SignUp() {
     <View style={localStyles.container}>
 
       <Pressable
-        onPress={() => router.back()}
+        onPress={() => router.replace('/Auth/login')}
         style={localStyles.backButton}
       >
         <Ionicons name="chevron-back" size={30} color="#FFF3DC" />

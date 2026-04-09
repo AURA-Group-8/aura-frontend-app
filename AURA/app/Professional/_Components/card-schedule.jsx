@@ -1,57 +1,71 @@
 import { useState } from 'react'
-import { View, Text, StyleSheet, Pressable } from 'react-native'
+import { View, Text, StyleSheet, Pressable, Modal, TextInput, TouchableOpacity } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
-import axios from 'axios'
-import { Picker } from '@react-native-picker/picker'
 
-
-export default function CardSchedule({ schedule }) {
-
-  const API_URL = process.env.API_URL || 'http://localhost:8080';
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
-
+export default function CardSchedule({ 
+  schedule,
+  onCancelSchedule,
+  onUpdateSchedule,
+  onRefresh
+}) {
+  const [cancelModalOpen, setCancelModalOpen] = useState(false)
+  const [cancellationReason, setCancellationReason] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const [paymentOpen, setPaymentOpen] = useState(false)
-  const [scheduleStatus, setScheduleStatus] = useState(
-    schedule.status || 'PENDENTE'
+
+  const canShowActions = !['FEITO', 'CANCELADO'].includes(
+    String(schedule.status).trim().toUpperCase()
   )
 
-  const [paymentStatus, setPaymentStatus] = useState(
-    schedule.paymentStatus || 'PENDENTE'
-  )
+  const confirmarCancelamento = async () => {
+    if (cancellationReason.trim() === '') {
+      setErrorMessage('Por favor, informe o motivo do cancelamento.')
+      return
+    }
 
-  async function updateSchedule(updatedFields) {
+    setIsLoading(true)
+    setErrorMessage('')
+
     try {
-      const payload = {
-        id: schedule.id,
-        status: (
-          updatedFields.status ?? scheduleStatus
-        ).toUpperCase(),
-
-        paymentStatus: (
-          updatedFields.paymentStatus ?? paymentStatus
-        ).toUpperCase(),
-      }
-
-      console.log('PAYLOAD ENVIADO:', payload)
-
-      const response = await axios.patch(
-        `${API_URL}/api/agendamentos/${schedule.id}`,
-        payload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            ...authHeaders,
-          },
+      // Apenas faz o DELETE com o motivo
+      await onCancelSchedule(schedule.id, cancellationReason)
+      
+      console.log('✅ Agendamento cancelado com sucesso!')
+      
+      // Fecha o modal imediatamente
+      setCancelModalOpen(false)
+      setCancellationReason('')
+      
+      // Aguarda um pouco e então recarrega a lista
+      setTimeout(() => {
+        if (onRefresh) {
+          onRefresh()
         }
-      )
-
-      console.log('Atualizado com sucesso:', response.data)
+      }, 500)
+      
     } catch (error) {
-      console.error(
-        'Erro ao atualizar:',
-        error.response?.data || error.message
-      )
+      setErrorMessage('Erro ao cancelar. Verifique o console para detalhes.')
+      console.error('❌ Erro ao cancelar agendamento:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handlePaymentChange = async () => {
+    try {
+      await onUpdateSchedule(schedule.id, { paymentStatus: 'PAGO' })
+      setPaymentOpen(false)
+    } catch (error) {
+      console.error('Erro ao atualizar pagamento:', error)
+    }
+  }
+
+  const handleConfirmSchedule = async () => {
+    try {
+      await onUpdateSchedule(schedule.id, { status: 'FEITO' })
+    } catch (error) {
+      console.error('Erro ao confirmar agendamento:', error)
     }
   }
 
@@ -79,8 +93,8 @@ export default function CardSchedule({ schedule }) {
           <Text style={styles.name}>{current.userName ?? 'Cliente'}</Text>
           <Text style={styles.servico}>{current.jobsNames?.length > 0 ? current.jobsNames.join(', ') : 'Agendamento'}</Text>
         </View>
-        <View style={[styles.statusBadge, current.status === 'Concluído' ? styles.statusConfirmed : styles.statusPending]}>
-          <Text style={styles.statusText}>{scheduleStatus}</Text>
+        <View style={[styles.statusBadge, current.status === 'FEITO' ? styles.statusConfirmed : styles.statusPending]}>
+          <Text style={styles.statusText}>{current.status}</Text>
         </View>
       </View>
 
@@ -108,16 +122,16 @@ export default function CardSchedule({ schedule }) {
           <Pressable
             style={styles.selectButton}
             onPress={() => {
-              if (paymentStatus !== 'PAGO') {
+              if (schedule.paymentStatus !== 'PAGO') {
                 setPaymentOpen(!paymentOpen)
               }
             }}
           >
             <Text style={styles.detail}>
-              {paymentStatus === 'PAGO' ? 'Pago' : 'Pendente'}
+              {schedule.paymentStatus === 'PAGO' ? 'PAGO' : 'PENDENTE'}
             </Text>
 
-            {paymentStatus !== 'PAGO' && (
+            {schedule.paymentStatus !== 'PAGO' && (
               <Ionicons
                 name={paymentOpen ? 'chevron-up' : 'chevron-down'}
                 size={18}
@@ -126,18 +140,11 @@ export default function CardSchedule({ schedule }) {
             )}
           </Pressable>
 
-          {paymentOpen && paymentStatus !== 'PAGO' && (
+          {paymentOpen && schedule.paymentStatus !== 'PAGO' && (
             <View style={styles.dropdown}>
               <Pressable
                 style={styles.dropdownItem}
-                onPress={() => {
-                  setPaymentStatus('PAGO')
-                  setPaymentOpen(false)
-
-                  updateSchedule({
-                    paymentStatus: 'PAGO'
-                  })
-                }}
+                onPress={handlePaymentChange}
               >
                 <Text style={styles.detail}>Pago</Text>
               </Pressable>
@@ -145,30 +152,88 @@ export default function CardSchedule({ schedule }) {
           )}
         </View>
       </View>
+      {canShowActions && (
+          <View style={styles.actionsRow}>
+            <Pressable
+              style={[styles.actionButton, styles.cancelButton]}
+              onPress={() => {
+                setCancelModalOpen(true)
+              }}
+            >
+              <Text style={styles.actionText}>✕</Text>
+            </Pressable>
 
-      {scheduleStatus !== 'FEITO' && (
-        <View style={styles.actionsRow}>
-          <Pressable
-            style={[styles.actionButton, styles.cancelButton]}
-            onPress={() => {
-              setScheduleStatus('CANCELADO')
-              updateSchedule({ status: 'CANCELADO' })
-            }}
-          >
-            <Text style={styles.actionText}>✕</Text>
-          </Pressable>
+            <Pressable
+              style={[styles.actionButton, styles.confirmButton]}
+              onPress={handleConfirmSchedule}
+            >
+              <Text style={styles.actionText}>✓</Text>
+            </Pressable>
+          </View>
+        )}
 
-          <Pressable
-            style={[styles.actionButton, styles.confirmButton]}
-            onPress={() => {
-              setScheduleStatus('FEITO')
-              updateSchedule({ status: 'FEITO' })
-            }}
-          >
-            <Text style={styles.actionText}>✓</Text>
-          </Pressable>
+      <Modal
+        visible={cancelModalOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setCancelModalOpen(false)
+          setCancellationReason('')
+          setErrorMessage('')
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Motivo do Cancelamento</Text>
+
+            <TextInput
+              style={styles.textInput}
+              placeholder="Digite o motivo do cancelamento..."
+              placeholderTextColor="#B0A8A0"
+              value={cancellationReason}
+              onChangeText={(text) => {
+                setCancellationReason(text)
+                setErrorMessage('')
+              }}
+              multiline={true}
+              numberOfLines={4}
+              editable={!isLoading}
+            />
+
+            {errorMessage !== '' && (
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            )}
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalCancelBtn]}
+                onPress={() => {
+                  setCancelModalOpen(false)
+                  setCancellationReason('')
+                  setErrorMessage('')
+                }}
+                disabled={isLoading}
+              >
+                <Text style={styles.modalButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  styles.modalConfirmBtn,
+                  isLoading && styles.modalButtonDisabled
+                ]}
+                onPress={confirmarCancelamento}
+                disabled={isLoading}
+              >
+                <Text style={styles.modalButtonText}>
+                  {isLoading ? 'Processando...' : 'Confirmar'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      )}
+      </Modal>
     </View>
   )
 }
@@ -305,9 +370,99 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+
+  dropdown: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#d4b98f',
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+  },
+
+  dropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+
+  paymentContainer: {
+    flex: 1,
+  },
+
   picker: {
     width: '100%',
     height: 40
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    width: '85%',
+    maxWidth: 350,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 8,
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#281111',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#E9E2DD',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 20,
+    fontSize: 14,
+    color: '#281111',
+    textAlignVertical: 'top',
+  },
+
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  modalCancelBtn: {
+    backgroundColor: '#F7E1E0',
+  },
+
+  modalConfirmBtn: {
+    backgroundColor: '#E3F7ED',
+  },
+
+  modalButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#281111',
+  },
+
+  modalButtonDisabled: {
+    opacity: 0.5,
   },
 
 })
