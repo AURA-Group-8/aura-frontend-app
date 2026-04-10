@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, ActivityIndicator, Modal, TouchableOpacity, Alert } from 'react-native'
 import { useRouter } from 'expo-router'
 import * as NavigationBar from 'expo-navigation-bar'
 import { useEffect, useState } from 'react'
@@ -13,6 +13,15 @@ export default function Services() {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editingService, setEditingService] = useState(null)
+  const [editForm, setEditForm] = useState({
+    name: '',
+    description: '',
+    duration: '',
+    price: '',
+  })
+  const [isSaving, setIsSaving] = useState(false)
 
   const API_URL = process.env.API_URL || 'http://localhost:8080'
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
@@ -41,20 +50,43 @@ export default function Services() {
 
       const servicesData = Array.isArray(response.data) ? response.data : response.data.content || []
 
-      const formattedServices = servicesData.map((service) => ({
-        id: service.idServico || service.id,
-        name: service.nomeServico || service.name,
-        jobName: service.nomeServico || service.name,
-        description: service.descricaoServico || service.description || '',
-        duration: service.duracao || service.duration || 0,
-        minutes: service.duracao || service.duration || 0,
-        price: service.preco || service.price || 0,
-        value: service.preco || service.price || 0,
-      }))
+      const servicesWithDetails = await Promise.all(
+        servicesData.map(async (service) => {
+          try {
+            const detailResponse = await axios.get(`${API_URL}/api/servicos/${service.id}`, {
+              headers: authHeaders,
+            })
+            
+            return {
+              id: detailResponse.data.id,
+              name: detailResponse.data.name,
+              jobName: detailResponse.data.name,
+              description: detailResponse.data.description || '',
+              duration: detailResponse.data.expectedDurationMinutes || 0,
+              minutes: detailResponse.data.expectedDurationMinutes || 0,
+              price: detailResponse.data.price || 0,
+              value: detailResponse.data.price || 0,
+            }
+          } catch (err) {
+            console.error(`❌ Erro ao buscar detalhes do serviço ${service.id}:`, err)
+            // Retornar serviço sem duração em caso de erro
+            return {
+              id: service.id,
+              name: service.name,
+              jobName: service.name,
+              description: service.description || '',
+              duration: 0,
+              minutes: 0,
+              price: service.price || 0,
+              value: service.price || 0,
+            }
+          }
+        })
+      )
 
-      console.log(`✅ ${formattedServices.length} serviços carregados`)
+      console.log(`✅ ${servicesWithDetails.length} serviços carregados com detalhes`)
 
-      setServices(formattedServices)
+      setServices(servicesWithDetails)
     } catch (err) {
       console.error('❌ Erro ao buscar serviços:', {
         status: err.response?.status,
@@ -72,35 +104,154 @@ export default function Services() {
     (service.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const handleEditService = (service) => {
-    console.log('Editar serviço:', service)
-    
-    router.push({
-      pathname: '/Professional/new-service',
-      params: { serviceId: service.id },
-    })
+  const minutesToHours = (minutes) => {
+    return (minutes / 60).toFixed(2)
   }
 
-  const handleDeleteService = async (serviceId) => {
-    try {
-      console.log('🔄 Deletando serviço:', serviceId)
+  const hoursToMinutes = (hours) => {
+    return Math.round(parseFloat(hours) * 60)
+  }
 
-      await axios.delete(`${API_URL}/api/servicos/${serviceId}`, {
+  const handleEditService = async (service) => {
+    try {
+      console.log('🔄 Buscando detalhes do serviço ID:', service.id)
+
+      const response = await axios.get(`${API_URL}/api/servicos/${service.id}`, {
         headers: authHeaders,
       })
 
-      console.log('✅ Serviço deletado com sucesso')
+      const completeService = response.data
 
-      // Remove do estado localmente
-      setServices((prev) => prev.filter((s) => s.id !== serviceId))
+      console.log('✅ Serviço completo recebido:', completeService)
+
+      setEditingService(completeService)
+      setEditForm({
+        name: completeService.name || '',
+        description: completeService.description || '',
+        duration: String(completeService.expectedDurationMinutes || 0),
+        price: String(completeService.price || 0),
+      })
+      setEditModalOpen(true)
     } catch (err) {
-      console.error('❌ Erro ao deletar serviço:', {
+      console.error('❌ Erro ao buscar serviço completo:', {
         status: err.response?.status,
         data: err.response?.data,
         message: err.message,
       })
-      setError('Erro ao deletar serviço')
+      Alert.alert('Erro', 'Falha ao carregar dados do serviço')
     }
+  }
+
+  const handleSaveEdit = async () => {
+    try {
+      if (!editForm.name.trim()) {
+        Alert.alert('Validação', 'Nome do serviço é obrigatório')
+        return
+      }
+
+      if (!editForm.duration || isNaN(editForm.duration)) {
+        Alert.alert('Validação', 'Duração deve ser um número válido')
+        return
+      }
+
+      if (!editForm.price || isNaN(editForm.price)) {
+        Alert.alert('Validação', 'Preço deve ser um número válido')
+        return
+      }
+
+      setIsSaving(true)
+
+      console.log(`🔄 Atualizando serviço #${editingService.id}`)
+
+      const payload = {
+        id: editingService.id,
+        name: editForm.name.trim(),
+        description: editForm.description.trim(),
+        expectedDurationMinutes: parseInt(editForm.duration),
+        price: parseFloat(editForm.price),
+      }
+
+      console.log('Payload:', payload)
+
+      await axios.patch(`${API_URL}/api/servicos/${editingService.id}`, payload, {
+        headers: authHeaders,
+      })
+
+      console.log('✅ Serviço atualizado com sucesso')
+
+      const durationInMinutes = parseInt(editForm.duration)
+
+      setServices((prev) =>
+        prev.map((s) =>
+          s.id === editingService.id
+            ? {
+                ...s,
+                name: editForm.name.trim(),
+                jobName: editForm.name.trim(),
+                description: editForm.description.trim(),
+                duration: durationInMinutes,
+                minutes: durationInMinutes,
+                price: parseFloat(editForm.price),
+                value: parseFloat(editForm.price),
+              }
+            : s
+        )
+      )
+
+      setEditModalOpen(false)
+      setEditingService(null)
+      setEditForm({ name: '', description: '', duration: '', price: '' })
+
+      Alert.alert('Sucesso', 'Serviço atualizado com sucesso')
+    } catch (err) {
+      console.error('❌ Erro ao atualizar serviço:', err)
+      Alert.alert('Erro', 'Falha ao atualizar serviço')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteService = async (serviceId) => {
+    Alert.alert(
+      'Confirmar Exclusão',
+      'Tem certeza que deseja deletar este serviço?',
+      [
+        {
+          text: 'Cancelar',
+          onPress: () => console.log('Exclusão cancelada'),
+          style: 'cancel',
+        },
+        {
+          text: 'Deletar',
+          onPress: async () => {
+            try {
+              setLoading(true)
+              console.log('🔄 Deletando serviço:', serviceId)
+
+              await axios.delete(`${API_URL}/api/servicos/${serviceId}`, {
+                headers: authHeaders,
+              })
+
+              console.log('✅ Serviço deletado com sucesso')
+
+              setServices((prev) => prev.filter((s) => s.id !== serviceId))
+
+              Alert.alert('Sucesso', 'Serviço deletado com sucesso')
+            } catch (err) {
+              console.error('❌ Erro ao deletar serviço:', {
+                status: err.response?.status,
+                data: err.response?.data,
+                message: err.message,
+              })
+              Alert.alert('Erro', 'Falha ao deletar serviço')
+            } finally {
+              setLoading(false)
+            }
+          },
+          style: 'destructive',
+        },
+      ]
+    )
   }
 
   return (
@@ -116,7 +267,6 @@ export default function Services() {
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        {/* Campo de Pesquisa */}
         <View style={styles.searchContainer}>
           <Ionicons
             name="search"
@@ -144,7 +294,6 @@ export default function Services() {
           )}
         </View>
 
-        {/* Botão Novo Serviço */}
         <Pressable
           style={({ pressed, hovered }) => [
             styles.button,
@@ -156,7 +305,6 @@ export default function Services() {
           <Text style={{ color: 'white', fontWeight: 'bold' }}>+ Novo Serviço</Text>
         </Pressable>
 
-        {/* Loading */}
         {loading && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#982546" />
@@ -164,7 +312,6 @@ export default function Services() {
           </View>
         )}
 
-        {/* Error */}
         {error !== '' && (
           <View style={styles.errorContainer}>
             <Ionicons name="alert-circle" size={24} color="#BE4053" />
@@ -178,7 +325,6 @@ export default function Services() {
           </View>
         )}
 
-        {/* Lista de Serviços */}
         {!loading && filteredServices.length > 0 ? (
           <View style={styles.servicesContainer}>
             {filteredServices.map((service) => (
@@ -215,6 +361,92 @@ export default function Services() {
           )
         )}
       </ScrollView>
+
+      <Modal
+        visible={editModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Editar Serviço</Text>
+              <Pressable onPress={() => setEditModalOpen(false)}>
+                <Ionicons name="close" size={24} color="#281111" />
+              </Pressable>
+            </View>
+
+            <ScrollView style={styles.modalFormContainer} showsVerticalScrollIndicator={false}>
+              <Text style={styles.label}>Nome do Serviço</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ex: Corte + Barba"
+                placeholderTextColor="#B0A8A0"
+                value={editForm.name}
+                onChangeText={(text) => setEditForm({ ...editForm, name: text })}
+                editable={!isSaving}
+              />
+
+              <Text style={styles.label}>Descrição</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="Descrição do serviço"
+                placeholderTextColor="#B0A8A0"
+                value={editForm.description}
+                onChangeText={(text) => setEditForm({ ...editForm, description: text })}
+                multiline
+                numberOfLines={3}
+                editable={!isSaving}
+              />
+
+              <Text style={styles.label}>Duração (minutos)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ex: 30 ou 60"
+                placeholderTextColor="#B0A8A0"
+                value={editForm.duration}
+                onChangeText={(text) => setEditForm({ ...editForm, duration: text })}
+                keyboardType="numeric"
+                editable={!isSaving}
+              />
+
+              <Text style={styles.label}>Preço (R$)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ex: 50.00"
+                placeholderTextColor="#B0A8A0"
+                value={editForm.price}
+                onChangeText={(text) => setEditForm({ ...editForm, price: text })}
+                keyboardType="decimal-pad"
+                editable={!isSaving}
+              />
+            </ScrollView>
+
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={[styles.cancelButton, isSaving && styles.buttonDisabled]}
+                onPress={() => setEditModalOpen(false)}
+                disabled={isSaving}
+              >
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.saveButton, isSaving && styles.buttonDisabled]}
+                onPress={handleSaveEdit}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Salvar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <NavbarPro active="Serviços" />
     </View>
@@ -359,5 +591,114 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 14,
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    width: '85%',
+    maxHeight: '80%',
+    paddingTop: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E9E2DD',
+    paddingBottom: 12,
+  },
+
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#281111',
+  },
+
+  modalFormContainer: {
+    paddingHorizontal: 20,
+    maxHeight: '60%',
+  },
+
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#281111',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+
+  input: {
+    borderWidth: 1,
+    borderColor: '#E9E2DD',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#281111',
+    backgroundColor: '#FAFAFA',
+  },
+
+  textArea: {
+    textAlignVertical: 'top',
+    minHeight: 80,
+  },
+
+  modalButtonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E9E2DD',
+  },
+
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#E9E2DD',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+
+  cancelButtonText: {
+    color: '#281111',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  saveButton: {
+    flex: 1,
+    backgroundColor: '#982546',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  buttonDisabled: {
+    opacity: 0.6,
   },
 })
