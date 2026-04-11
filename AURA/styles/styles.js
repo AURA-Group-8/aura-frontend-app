@@ -117,9 +117,6 @@ export const styles = StyleSheet.create({
     color: '#FFF3DC',
   },
 
-  signUpForm: {
-    // Adicionado para o View do formulário
-  },
 
   signUpInput: {
     borderWidth: 1,
@@ -149,9 +146,6 @@ export const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  animacao: {
-    // Estilo para a animação na splash screen
-  },
 
   loadingText: {
     fontSize: 50,

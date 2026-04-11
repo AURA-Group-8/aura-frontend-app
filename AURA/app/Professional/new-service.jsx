@@ -69,8 +69,6 @@ export default function NewService() {
     try {
       setLoading(true)
 
-      console.log('🔄 Criando novo serviço...')
-
       const payload = {
         name: formData.name.trim(),
         description: formData.description.trim(),
@@ -78,13 +76,9 @@ export default function NewService() {
         price: parseFloat(formData.price),
       }
 
-      console.log('Payload:', payload)
-
       const response = await axios.post(`${API_URL}/api/servicos`, payload, {
         headers: authHeaders,
       })
-
-      console.log('✅ Serviço criado com sucesso:', response.data)
 
       setPopupType('success')
       setPopupMessage('Serviço adicionado com sucesso!')

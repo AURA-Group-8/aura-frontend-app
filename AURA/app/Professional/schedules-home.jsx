@@ -52,7 +52,6 @@ export default function Schedules() {
         payload.paymentStatus = updatedFields.paymentStatus.toUpperCase()
       }
 
-      console.log(`🔄 Atualizando agendamento #${scheduleId}:`, payload)
 
       const response = await axios.patch(
         `${API_URL}/api/agendamentos/${scheduleId}`,
@@ -65,7 +64,20 @@ export default function Schedules() {
         }
       )
 
-      console.log(`✅ Agendamento #${scheduleId} atualizado com sucesso`)
+      console.log(`✅ Agendamento atualizado com sucesso`)
+
+      setAgendamentos((prev) =>
+        prev.map((schedule) =>
+          schedule.id === scheduleId
+            ? {
+                ...schedule,
+                status: updatedFields.status?.toUpperCase() || schedule.status,
+                paymentStatus: updatedFields.paymentStatus?.toUpperCase() || schedule.paymentStatus,
+              }
+            : schedule
+        )
+      )
+
       return response.data
     } catch (error) {
       console.error('❌ Erro ao atualizar agendamento:', {
@@ -92,9 +104,6 @@ export default function Schedules() {
       if (!token) {
         throw new Error('Token de autenticação não encontrado')
       }
-
-      console.log(`🔄 Deletando agendamento #${scheduleId}`)
-      console.log(`📝 Motivo: "${mensagem}"`)
       
       const response = await axios.delete(`${API_URL}/api/agendamentos/${scheduleId}`, {
         headers: authHeaders,
@@ -104,6 +113,11 @@ export default function Schedules() {
       })
       
       console.log('✅ Agendamento deletado com sucesso')
+
+      setAgendamentos((prev) =>
+        prev.filter((schedule) => schedule.id !== scheduleId)
+      )
+
       return response.data
     } catch (error) {
       console.error('❌ Erro ao deletar agendamento:', {
@@ -118,8 +132,7 @@ export default function Schedules() {
 
   async function getSchedules() {
     try {
-      console.log(`🔄 Buscando agendamentos... (Página ${page + 1}, ${size} itens)`)
-      
+     
       const response = await axios.get(`${API_URL}/api/agendamentos/card`, {
         headers: authHeaders,
         params: {
@@ -163,8 +176,7 @@ export default function Schedules() {
         return aDate - bDate
       })
 
-      console.log(`✅ ${sortedSchedules.length} agendamentos carregados (Total: ${responseData.totalElements ?? 0})`)
-
+    
       setAgendamentos(sortedSchedules);
       setTotalPages(responseData.totalPages ?? 1);
       setTotalItems(responseData.totalElements ?? content.length);
@@ -238,7 +250,6 @@ export default function Schedules() {
         showsVerticalScrollIndicator={false}
       >
 
-        {/* Filtros de Data */}
         <View style={styles.filterContainer}>
           <Pressable
             style={[
@@ -368,7 +379,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFF3DC',
-    paddingTop: 60
+    paddingTop: 20
   },
 
   header: {

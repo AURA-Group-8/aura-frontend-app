@@ -10,12 +10,6 @@ export default function CardJob({
     return null
   }
 
-  console.log('🎨 CardJob recebido:', { 
-    id: job.id, 
-    duration: job.duration, 
-    minutes: job.minutes,
-    name: job.name 
-  })
 
   const formatPrice = (price) => {
     if (!price) return 'R$ 0,00'

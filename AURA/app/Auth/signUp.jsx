@@ -166,6 +166,13 @@ export default function SignUp() {
         />
         {passwordError ? <Text style={localStyles.error}>{passwordError}</Text> : null}
 
+        <Text style={localStyles.Textlink}>
+          Já tem uma conta?{' '}
+          <Text style={localStyles.link} onPress={() => router.replace('/Auth/login')}>
+            Faça login
+          </Text>
+        </Text>
+
         <Pressable
           style={[styles.btnLogin, { backgroundColor: '#fff3dc', opacity: buttonHovered ? 0.8 : 1 }]}
           onPress={SignUp}
@@ -220,5 +227,16 @@ const localStyles = StyleSheet.create({
   error: {
     color: '#fa8585',
     fontSize: 12,
+  },
+
+  Textlink: {
+    color: '#fff6e5',
+    
+  },
+
+  link: {
+    color: '#FFF3DC',
+      textDecorationLine: 'underline',
+      fontWeight: '500',
   },
 });

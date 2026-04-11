@@ -28,16 +28,16 @@ export default function CardSchedule({
     setErrorMessage('')
 
     try {
-      // Apenas faz o DELETE com o motivo
+    
       await onCancelSchedule(schedule.id, cancellationReason)
       
       console.log('✅ Agendamento cancelado com sucesso!')
       
-      // Fecha o modal imediatamente
+     
       setCancelModalOpen(false)
       setCancellationReason('')
       
-      // Aguarda um pouco e então recarrega a lista
+      
       setTimeout(() => {
         if (onRefresh) {
           onRefresh()

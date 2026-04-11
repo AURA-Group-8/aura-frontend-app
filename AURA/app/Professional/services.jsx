@@ -42,8 +42,6 @@ export default function Services() {
       setLoading(true)
       setError('')
 
-      console.log('🔄 Buscando serviços...')
-
       const response = await axios.get(`${API_URL}/api/servicos`, {
         headers: authHeaders,
       })
@@ -69,7 +67,7 @@ export default function Services() {
             }
           } catch (err) {
             console.error(`❌ Erro ao buscar detalhes do serviço ${service.id}:`, err)
-            // Retornar serviço sem duração em caso de erro
+            
             return {
               id: service.id,
               name: service.name,
@@ -84,8 +82,7 @@ export default function Services() {
         })
       )
 
-      console.log(`✅ ${servicesWithDetails.length} serviços carregados com detalhes`)
-
+      
       setServices(servicesWithDetails)
     } catch (err) {
       console.error('❌ Erro ao buscar serviços:', {
@@ -114,7 +111,6 @@ export default function Services() {
 
   const handleEditService = async (service) => {
     try {
-      console.log('🔄 Buscando detalhes do serviço ID:', service.id)
 
       const response = await axios.get(`${API_URL}/api/servicos/${service.id}`, {
         headers: authHeaders,
@@ -122,7 +118,6 @@ export default function Services() {
 
       const completeService = response.data
 
-      console.log('✅ Serviço completo recebido:', completeService)
 
       setEditingService(completeService)
       setEditForm({
@@ -160,8 +155,6 @@ export default function Services() {
       }
 
       setIsSaving(true)
-
-      console.log(`🔄 Atualizando serviço #${editingService.id}`)
 
       const payload = {
         id: editingService.id,
@@ -218,7 +211,6 @@ export default function Services() {
       [
         {
           text: 'Cancelar',
-          onPress: () => console.log('Exclusão cancelada'),
           style: 'cancel',
         },
         {
@@ -226,7 +218,6 @@ export default function Services() {
           onPress: async () => {
             try {
               setLoading(true)
-              console.log('🔄 Deletando serviço:', serviceId)
 
               await axios.delete(`${API_URL}/api/servicos/${serviceId}`, {
                 headers: authHeaders,
@@ -257,9 +248,7 @@ export default function Services() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={30} color="#281111" />
-        </Pressable>
+        
         <Text style={styles.title}>Meus Serviços</Text>
       </View>
 
@@ -457,7 +446,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFF3DC',
-    paddingTop: 60,
+    paddingTop: 16,
   },
 
   header: {
