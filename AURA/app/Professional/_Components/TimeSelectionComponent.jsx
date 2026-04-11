@@ -30,10 +30,6 @@ export default function TimeSelectionComponent({ selectedDate, selectedJob, sele
                 ? availableTimes
                 : []
 
-        console.log('selectedDayString:', selectedDayString)
-        console.log('availableTimes dates:', availableTimes.map((item) => item?.date))
-        console.log('selectedDayObject:', selectedDayObject)
-        console.log('selectedDaySlots:', slots)
         return slots
     }, [availableTimes, selectedDate])
 
@@ -43,7 +39,7 @@ export default function TimeSelectionComponent({ selectedDate, selectedJob, sele
 
     async function loadAvailableTimes() {
         const duration = selectedJob?.expectedDurationMinutes ?? 30
-        console.log('Carregando horários para:', selectedDate.toISOString().split('T')[0], 'duration:', duration)
+       
         const times = await getAvailableTimes(duration)
         setAvailableTimes(times)
         setSelectedTime(null)
@@ -64,8 +60,6 @@ export default function TimeSelectionComponent({ selectedDate, selectedJob, sele
                     firstDayOfWeek: dateString,
                 },
             })
-            console.log('Request firstDayOfWeek:', dateString)
-            console.log('Resposta da API de horários:', response.data)
             return response.data
         } catch (error) {
             console.error('Erro ao buscar horários disponíveis:', error)

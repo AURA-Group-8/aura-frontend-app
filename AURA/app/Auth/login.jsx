@@ -144,6 +144,7 @@ export default function Login() {
         <Link href="/Auth/forgot-password">
           <Text style={{ color: '#FFF3DC', textDecorationLine: 'underline' }}>Esqueci minha senha</Text>
         </Link>
+          <Text style={localStyles.Textlink}> Ainda não tem uma conta? <Text style={localStyles.link} onPress={() => router.replace('/Auth/signUp')}>Cadastre-se</Text></Text>  
 
         <Pressable
           style={[styles.btnLogin, { backgroundColor: '#fff3dc', color: '#5c0f25', opacity: buttonHovered ? 0.8 : 1 }]}
@@ -186,11 +187,20 @@ const localStyles = StyleSheet.create({
     width: 300,
     padding: 12,
     borderRadius: 20,
-    marginBottom: 5,
     fontWeight: '500',
   },
   error: {
     color: '#fa8585',
     fontSize: 12,
+  },
+  Textlink: {
+    color: '#fff6e5',
+    
+  },
+
+  link: {
+    color: '#FFF3DC',
+      textDecorationLine: 'underline',
+      fontWeight: '500',
   },
 });
