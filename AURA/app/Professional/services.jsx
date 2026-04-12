@@ -7,8 +7,9 @@ import { Platform } from 'react-native'
 import axios from 'axios'
 import NavbarPro from './_Components/NavbarPro'
 import CardJob from './_Components/card-job'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
-export default function Services() {
+export default async function Services() {
   const [services, setServices] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
@@ -24,7 +25,7 @@ export default function Services() {
   const [isSaving, setIsSaving] = useState(false)
 
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const token = typeof window !== 'undefined' ? await AsyncStorage.getItem('token') : null
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
 
   const router = useRouter()

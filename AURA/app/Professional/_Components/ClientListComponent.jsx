@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
 import axios from 'axios'
 import CardPopUp from './card-popUp'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
-export default function ClientListComponent({ selectedClient, setSelectedClient }) {
+export default async function ClientListComponent({ selectedClient, setSelectedClient }) {
     const [clients, setClients] = useState([])
     const [clientOpen, setClientOpen] = useState(false)
     const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    const token = typeof window !== 'undefined' ? await AsyncStorage.getItem('token') : null
     const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
 
     useEffect(() => {

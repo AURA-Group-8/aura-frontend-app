@@ -6,6 +6,7 @@ import { Link, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import axios from 'axios';
 import CardPopUp from '../Professional/_Components/card-popUp';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Login() {
   let token = null; 
@@ -41,7 +42,7 @@ export default function Login() {
       hasError = true;
     } else if (senha.length < 6) {
       setSenhaError('Senha deve ter pelo menos 6 dígitos');
-      hasError = true;
+    hasError = true;
     } else {
       setSenhaError('');
     }
@@ -62,9 +63,8 @@ export default function Login() {
         console.log('Login response:', loginResponse);
 
         token = loginResponse.data?.token || loginResponse.data?.accessToken || loginResponse.data?.access_token;
-        // if (typeof window !== 'undefined' && token) {
-        //   localStorage.setItem('token', token);
-        // }
+        await AsyncStorage.setItem('token', token);
+
 
         if (loginResponse.status === 200) {
           const userResponse = await axios.get(`${API_URL}/api/usuarios/${loginResponse.data.id}`, {

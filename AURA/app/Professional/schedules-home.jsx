@@ -7,8 +7,9 @@ import { Platform } from 'react-native';
 import axios from 'axios';
 import NavbarPro from './_Components/NavbarPro';
 import CardSchedule from './_Components/card-schedule';
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
-export default function Schedules() {
+export default async function Schedules() {
   const [agendamentos, setAgendamentos] = useState([]);
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
@@ -18,7 +19,7 @@ export default function Schedules() {
   const [direction, setDirection] = useState('ASC');
   const [filterType, setFilterType] = useState('todos') 
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const token = typeof window !== 'undefined' ? await AsyncStorage.getItem('token') : null
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
 
   useEffect(() => {
