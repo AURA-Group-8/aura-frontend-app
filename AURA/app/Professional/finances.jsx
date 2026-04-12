@@ -6,8 +6,9 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 import { Platform } from 'react-native'
 import axios from 'axios'
 import NavbarPro from './_Components/NavbarPro'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
-export default function Finances() {
+export default async function Finances() {
   const [monthlyRevenue, setMonthlyRevenue] = useState('0')
   const [cancellations, setCancellations] = useState(0)
   const [weeklyData, setWeeklyData] = useState([
@@ -27,7 +28,7 @@ export default function Finances() {
   const [error, setError] = useState('')
 
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const token = typeof window !== 'undefined' ? await AsyncStorage.getItem('token') : null
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
 
   const router = useRouter()

@@ -4,8 +4,9 @@ import { useState } from 'react'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import axios from 'axios'
 import CardPopUp from './_Components/card-popUp'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
-export default function NewService() {
+export default async function NewService() {
   const router = useRouter()
   const [formData, setFormData] = useState({
     name: '',
@@ -19,7 +20,7 @@ export default function NewService() {
   const [popupMessage, setPopupMessage] = useState('')
 
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const token = typeof window !== 'undefined' ? await AsyncStorage.getItem('token') : null
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
 
   const handleChangeForm = (field, value) => {

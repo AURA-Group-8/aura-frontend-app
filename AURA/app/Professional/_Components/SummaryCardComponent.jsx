@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
 import axios from 'axios'
 import { router } from 'expo-router'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const monthNames = [
     'janeiro',
@@ -18,9 +19,9 @@ const monthNames = [
     'dezembro',
 ]
 
-export default function SummaryCardComponent({ selectedDate, selectedTime, selectedClient, selectedJob }) {
+export default async function SummaryCardComponent({ selectedDate, selectedTime, selectedClient, selectedJob }) {
     const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    const token = typeof window !== 'undefined' ? await AsyncStorage.getItem('token') : null
     const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
     const [isSubmitting, setIsSubmitting] = useState(false)
 
