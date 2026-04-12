@@ -23,7 +23,7 @@ export default function Services() {
   })
   const [isSaving, setIsSaving] = useState(false)
 
-  const API_URL = process.env.API_URL || 'http://localhost:8080'
+  const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
 
