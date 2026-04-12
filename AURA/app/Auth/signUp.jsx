@@ -19,7 +19,7 @@ export default function SignUp() {
   const [phoneError, setPhoneError] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
-  const API_URL = process.env.API_URL || 'http://localhost:8080';
+  const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
 
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
@@ -102,6 +102,7 @@ export default function SignUp() {
         setPopupMessage('Erro ao realizar cadastro. Tente novamente.');
         setPopupType('error');
         setPopupVisible(true);
+        console.error('Erro ao realizar cadastro:', response.data);
 
       }
     }
