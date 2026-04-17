@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
 import axios from 'axios'
 import { router } from 'expo-router'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const monthNames = [
     'janeiro',
@@ -20,15 +21,16 @@ const monthNames = [
 
 export default function SummaryCardComponent({ selectedDate, selectedTime, selectedClient, selectedJob }) {
     const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-    const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
     const [isSubmitting, setIsSubmitting] = useState(false)
-
+    
     const clientLabel = selectedClient ? selectedClient.username || selectedClient.name || selectedClient.email : null
-
+    
     async function handleConfirm() {
-        if (!selectedJob || !selectedTime || !selectedClient) return
+        const token = typeof window !== 'undefined' ? await AsyncStorage.getItem('token') : null
+        const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
 
+        if (!selectedJob || !selectedTime || !selectedClient) return
+        
         const year = selectedDate.getFullYear()
         const month = String(selectedDate.getMonth() + 1).padStart(2, '0')
         const day = String(selectedDate.getDate()).padStart(2, '0')

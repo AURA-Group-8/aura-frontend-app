@@ -1,9 +1,10 @@
 import { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity, ActivityIndicator, ScrollView, Pressable } from 'react-native'
 import { useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import axios from 'axios'
 import CardPopUp from './_Components/card-popUp'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export default function NewService() {
   const router = useRouter()
@@ -18,9 +19,16 @@ export default function NewService() {
   const [popupType, setPopupType] = useState('success')
   const [popupMessage, setPopupMessage] = useState('')
 
+  const authHeadersRef = useRef({})
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
+
+  useEffect(() => {
+    const init = async () => {
+      const token = await AsyncStorage.getItem('token')
+      authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
+    }
+    init()
+  }, [])
 
   const handleChangeForm = (field, value) => {
     setFormData(prev => ({
@@ -77,7 +85,7 @@ export default function NewService() {
       }
 
       const response = await axios.post(`${API_URL}/api/servicos`, payload, {
-        headers: authHeaders,
+        headers: authHeadersRef.current,
       })
 
       setPopupType('success')

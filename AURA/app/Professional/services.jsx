@@ -1,12 +1,14 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, ActivityIndicator, Modal, TouchableOpacity, Alert } from 'react-native'
 import { useRouter } from 'expo-router'
 import * as NavigationBar from 'expo-navigation-bar'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { Platform } from 'react-native'
 import axios from 'axios'
 import NavbarPro from './_Components/NavbarPro'
 import CardJob from './_Components/card-job'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+
 
 export default function Services() {
   const [services, setServices] = useState([])
@@ -23,9 +25,8 @@ export default function Services() {
   })
   const [isSaving, setIsSaving] = useState(false)
 
+  const authHeadersRef = useRef({})
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
 
   const router = useRouter()
 
@@ -34,7 +35,12 @@ export default function Services() {
       NavigationBar.setVisibilityAsync("hidden")
       NavigationBar.setBehaviorAsync("overlay-swipe")
     }
-    fetchServices()
+    const init = async () => {
+      const token = await AsyncStorage.getItem('token')
+      authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
+      fetchServices()
+    }
+    init()
   }, [])
 
   async function fetchServices() {
@@ -43,7 +49,7 @@ export default function Services() {
       setError('')
 
       const response = await axios.get(`${API_URL}/api/servicos`, {
-        headers: authHeaders,
+        headers: authHeadersRef.current,
       })
 
       const servicesData = Array.isArray(response.data) ? response.data : response.data.content || []
@@ -52,7 +58,7 @@ export default function Services() {
         servicesData.map(async (service) => {
           try {
             const detailResponse = await axios.get(`${API_URL}/api/servicos/${service.id}`, {
-              headers: authHeaders,
+              headers: authHeadersRef.current,
             })
             
             return {
@@ -113,7 +119,7 @@ export default function Services() {
     try {
 
       const response = await axios.get(`${API_URL}/api/servicos/${service.id}`, {
-        headers: authHeaders,
+        headers: authHeadersRef.current,
       })
 
       const completeService = response.data
@@ -167,7 +173,7 @@ export default function Services() {
       console.log('Payload:', payload)
 
       await axios.patch(`${API_URL}/api/servicos/${editingService.id}`, payload, {
-        headers: authHeaders,
+        headers: authHeadersRef.current,
       })
 
       console.log('✅ Serviço atualizado com sucesso')
@@ -220,7 +226,7 @@ export default function Services() {
               setLoading(true)
 
               await axios.delete(`${API_URL}/api/servicos/${serviceId}`, {
-                headers: authHeaders,
+                headers: authHeadersRef.current,
               })
 
               console.log('✅ Serviço deletado com sucesso')

@@ -1,12 +1,20 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
 import axios from 'axios'
+// AsyncStorage.getItem('token')
 
 export default function TimeSelectionComponent({ selectedDate, selectedJob, selectedTime, setSelectedTime }) {
     const [availableTimes, setAvailableTimes] = useState([])
+    const authHeadersRef = useRef({})
     const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-    const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
+
+    useEffect(() => {
+        const init = async () => {
+            const token = await AsyncStorage.getItem('token')
+            authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
+        }
+        init()
+    }, [])
 
     const selectedDaySlots = useMemo(() => {
         if (!Array.isArray(availableTimes)) return []
@@ -54,7 +62,7 @@ export default function TimeSelectionComponent({ selectedDate, selectedJob, sele
             const dateString = firstDayOfWeek.toISOString().split('T')[0]
 
             const response = await axios.get(`${API_URL}/api/agendamentos/available-times`, {
-                headers: authHeaders,
+                headers: authHeadersRef.current,
                 params: {
                     durationInMinutes,
                     firstDayOfWeek: dateString,
