@@ -1,14 +1,14 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import * as NavigationBar from 'expo-navigation-bar'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { Platform } from 'react-native'
 import axios from 'axios'
 import NavbarPro from './_Components/NavbarPro'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-export default async function Finances() {
+export default function Finances() {
   const [monthlyRevenue, setMonthlyRevenue] = useState('0')
   const [cancellations, setCancellations] = useState(0)
   const [weeklyData, setWeeklyData] = useState([
@@ -27,9 +27,9 @@ export default async function Finances() {
   const [historyLoading, setHistoryLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const authHeadersRef = useRef(null)
+
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
-  const token = typeof window !== 'undefined' ? await AsyncStorage.getItem('token') : null
-  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
 
   const router = useRouter()
 
@@ -38,7 +38,12 @@ export default async function Finances() {
       NavigationBar.setVisibilityAsync('hidden')
       NavigationBar.setBehaviorAsync('overlay-swipe')
     }
-    fetchFinancesData()
+    const init = async () => {
+      const token = await AsyncStorage.getItem('token')
+      authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
+      fetchFinancesData()
+    }
+    init()
   }, [])
 
   useFocusEffect(
@@ -53,7 +58,7 @@ export default async function Finances() {
       setError('')
 
       const response = await axios.get(`${API_URL}/api/insights/finance/dashboard`, {
-        headers: authHeaders,
+        headers: authHeadersRef.current,
       })
 
 

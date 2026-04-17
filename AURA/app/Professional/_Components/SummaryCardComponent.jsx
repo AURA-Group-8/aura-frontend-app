@@ -19,17 +19,18 @@ const monthNames = [
     'dezembro',
 ]
 
-export default async function SummaryCardComponent({ selectedDate, selectedTime, selectedClient, selectedJob }) {
+export default function SummaryCardComponent({ selectedDate, selectedTime, selectedClient, selectedJob }) {
     const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
-    const token = typeof window !== 'undefined' ? await AsyncStorage.getItem('token') : null
-    const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
     const [isSubmitting, setIsSubmitting] = useState(false)
-
+    
     const clientLabel = selectedClient ? selectedClient.username || selectedClient.name || selectedClient.email : null
-
+    
     async function handleConfirm() {
-        if (!selectedJob || !selectedTime || !selectedClient) return
+        const token = typeof window !== 'undefined' ? await AsyncStorage.getItem('token') : null
+        const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
 
+        if (!selectedJob || !selectedTime || !selectedClient) return
+        
         const year = selectedDate.getFullYear()
         const month = String(selectedDate.getMonth() + 1).padStart(2, '0')
         const day = String(selectedDate.getDate()).padStart(2, '0')
