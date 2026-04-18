@@ -26,7 +26,14 @@
       "favicon": "./assets/AURA.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-file-system",
+        {
+          "supportsOpeningDocumentsInPlace": true,
+          "enableFileSharing": true
+        }
+      ]
     ]
   }
 }

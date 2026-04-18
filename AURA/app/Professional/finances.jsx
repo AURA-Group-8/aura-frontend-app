@@ -46,17 +46,11 @@ export default function Finances() {
     init()
   }, [])
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchFinancesData()
-    }, [])
-  )
 
   async function fetchFinancesData() {
     try {
       setLoading(true)
       setError('')
-
       const response = await axios.get(`${API_URL}/api/insights/finance/dashboard`, {
         headers: authHeadersRef.current,
       })
@@ -131,7 +125,7 @@ export default function Finances() {
       const endMonth = Math.max(...months)
 
       const response = await axios.get(`${API_URL}/api/insights/finance/historico`, {
-        headers: authHeaders,
+        headers: authHeadersRef.current,
         params: {
           startMonth,
           endMonth,

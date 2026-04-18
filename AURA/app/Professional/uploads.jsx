@@ -11,12 +11,97 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import NavbarPro from './_Components/NavbarPro'
 import { useRouter } from 'expo-router'
+import * as FileSystem from 'expo-file-system/legacy'
+import * as Sharing from 'expo-sharing'
+import * as DocumentPicker from 'expo-document-picker'
+import axios from 'axios'
+
+import CardPopup from './_Components/card-popUp'
 
 export default function UploadsScreen() {
-    const [selectedFile, setSelectedFile] = useState(null)
-
     const router = useRouter();
 
+    const [popupVisible, setPopupVisible] = useState(false);
+    const [popupMessage, setPopupMessage] = useState('');
+    const [popupType, setPopupType] = useState('failed');
+
+    const [selectedFile, setSelectedFile] = useState(null)
+
+
+    const API_ETL_URL = process.env.EXPO_PUBLIC_API_ETL_URL || 'http://localhost:8080'
+        
+    const getFileTemplate = async () => {
+        try {
+            const url = `${API_ETL_URL}/api/v1/template`
+
+            const response = await fetch(url)
+            const blob = await response.blob()
+
+            const reader = new FileReader()
+
+            reader.onloadend = async () => {
+                const base64 = reader.result.split(',')[1]
+
+                const fileUri = FileSystem.cacheDirectory + 'template.xlsx'
+
+                await FileSystem.writeAsStringAsync(fileUri, base64, {
+                    encoding: FileSystem.EncodingType.Base64,
+                })
+
+                console.log('Arquivo salvo em:', fileUri)
+
+                await Sharing.shareAsync(fileUri)
+            }
+
+            reader.readAsDataURL(blob)
+
+        } catch (error) {
+            console.error('Erro ao baixar o template:', error)
+            Alert.alert('Erro', 'Não foi possível baixar o arquivo.')
+        }
+    }
+
+    const pickAndUploadFile = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: '*/*',
+                copyToCacheDirectory: true,
+            })
+
+            if (result.canceled) return
+
+            const file = result.assets[0]
+
+            const formData = new FormData()
+
+            formData.append('file', {
+                uri: file.uri,
+                name: file.name,
+                type: file.mimeType || 'application/octet-stream',
+            })
+
+            const response = await fetch(`${API_ETL_URL}/api/v1/custos`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+                body: formData,
+            })
+
+            if (response.ok) {
+                setPopupVisible(true);
+                setPopupMessage('Arquivo enviado com sucesso!');
+                setPopupType('success');
+            } else {
+                setPopupVisible(true);
+                setPopupMessage('Falha ao enviar o arquivo. Tente novamente mais tarde.');
+                setPopupType('failed');
+            }
+
+        } catch (error) {
+            console.error('Erro no upload:', error)
+        }
+    }
 
     return (
         <View style={styles.container}>
@@ -54,8 +139,8 @@ export default function UploadsScreen() {
 
                     <View style={styles.infoBox}>
                         <Text style={styles.infoBoxText}>
-                            📥 <Text style={{ fontWeight: '600' }}>Download:</Text> Baixe o arquivo com os campos necessários. <br></br>
-                            <Pressable style={styles.downloadButton}>
+                            📥 <Text style={{ fontWeight: '600' }}>Download:</Text> Baixe o arquivo com os campos necessários. {'\n'}
+                            <Pressable style={styles.downloadButton} onPress={getFileTemplate}>
                                 <Text style={styles.downloadButtonText}>Baixar arquivo</Text>
                             </Pressable>
                         </Text>
@@ -70,6 +155,7 @@ export default function UploadsScreen() {
 
                     <TouchableOpacity
                         style={[styles.button]}
+                        onPress={pickAndUploadFile}
                     >
 
                         <Ionicons name="add-circle" size={20} color="#FFF" />
@@ -83,7 +169,12 @@ export default function UploadsScreen() {
 
 
             </ScrollView>
-
+            <CardPopup 
+                message={popupMessage}
+                onClose={() => setPopupVisible(false)}
+                visible={popupVisible}
+                type={popupType}
+            />
             <NavbarPro />
         </View>
     )
