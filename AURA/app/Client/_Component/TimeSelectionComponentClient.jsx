@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
 import axios from 'axios'
-// AsyncStorage.getItem('token')
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export default function TimeSelectionComponent({ selectedDate, selectedJob, selectedTime, setSelectedTime }) {
     const [availableTimes, setAvailableTimes] = useState([])

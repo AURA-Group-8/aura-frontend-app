@@ -1,51 +1,26 @@
 import { View, Pressable, Text, StyleSheet } from 'react-native'
 import { useRouter } from 'expo-router'
 import Ionicons from '@expo/vector-icons/Ionicons'
+import AntDesign from '@expo/vector-icons/AntDesign'
+import { useRouter } from 'expo-router';
 
-const navItems = [
-  { label: 'Agenda', icon: 'calendar-outline', route: '/Professional/schedules-home' },
-  { label: 'Serviços', icon: 'briefcase-outline', route: '/Professional/services' },
-  { label: 'Finanças', icon: 'wallet-outline', route: '/Professional/finances' },
-  { label: 'Clientes', icon: 'people-outline', route: '/Professional/clients' },
-  { label: 'Mais', icon: 'menu-outline', route: '/Professional/more' },
-]
+export default function Navbar() {
 
-export default function NavbarPro({ active = 'Agenda' }) {
-  const router = useRouter()
-
-  const handleNavigation = (item) => {
-    router.push(item.route)
-  }
+  const router = useRouter();
 
   return (
     <View style={styles.navbar}>
-      {navItems.map((item) => {
-        const isActive = active === item.label
-        return (
-          <Pressable
-            key={item.label}
-            style={({ pressed }) => [
-              styles.navItem,
-              pressed && styles.navItemPressed,
-            ]}
-            onPress={() => handleNavigation(item)}
-          >
-            <Ionicons
-              name={item.icon}
-              size={24}
-              color={isActive ? '#5c0f25' : '#982546'}
-            />
-            <Text
-              style={[
-                styles.navLabel,
-                isActive && styles.navLabelActive,
-              ]}
-            >
-              {item.label}
-            </Text>
-          </Pressable>
-        )
-      })}
+      <Pressable style={styles.navItem} onPress={() => router.replace('/Client/schedules')}>
+        <AntDesign name="schedule" size={28} color="#982546" />
+      </Pressable>
+
+      <Pressable style={styles.navItem} onPress={() => router.replace('/Client/newScheduleClient')}>
+        <AntDesign name="clock-circle" size={28} color="#982546" />
+      </Pressable>
+
+      <Pressable style={styles.navItem} onPress={() => router.replace('/Client/profile')}>
+        <Ionicons name="person-outline" size={28} color="#982546" />
+      </Pressable>
     </View>
   )
 }

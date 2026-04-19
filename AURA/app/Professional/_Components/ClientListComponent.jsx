@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
 import axios from 'axios'
-import CardPopUp from './card-popUp'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export default function ClientListComponent({ selectedClient, setSelectedClient }) {
     const [clients, setClients] = useState([])
     const [clientOpen, setClientOpen] = useState(false)
-    const API_URL = process.env.API_URL || 'http://localhost:8080'
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-    const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
+    const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
 
     useEffect(() => {
         loadClients()
@@ -21,6 +19,9 @@ export default function ClientListComponent({ selectedClient, setSelectedClient 
 
     async function getClients() {
         try {
+            const token = await AsyncStorage.getItem('token')
+            const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
+
             const response = await axios.get(`${API_URL}/api/usuarios`, {
                 headers: authHeaders,
             })

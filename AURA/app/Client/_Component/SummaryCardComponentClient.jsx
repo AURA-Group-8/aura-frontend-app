@@ -19,17 +19,17 @@ const monthNames = [
     'dezembro',
 ]
 
-export default function SummaryCardComponent({ selectedDate, selectedTime, selectedClient, selectedJob }) {
+export default function SummaryCardComponent({ selectedDate, selectedTime, selectedJob }) {
     const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
     const [isSubmitting, setIsSubmitting] = useState(false)
     
-    const clientLabel = selectedClient ? selectedClient.username || selectedClient.name || selectedClient.email : null
     
     async function handleConfirm() {
         const token = typeof window !== 'undefined' ? await AsyncStorage.getItem('token') : null
         const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
+        const userId = await AsyncStorage.getItem('userId')
 
-        if (!selectedJob || !selectedTime || !selectedClient) return
+        if (!selectedJob || !selectedTime) return
         
         const year = selectedDate.getFullYear()
         const month = String(selectedDate.getMonth() + 1).padStart(2, '0')
@@ -38,7 +38,7 @@ export default function SummaryCardComponent({ selectedDate, selectedTime, selec
         const startDatetime = `${year}-${month}-${day}T${time}`
 
         const body = {
-            userId: selectedClient.id,
+            userId: userId,
             jobsIds: [selectedJob.id],
             startDatetime,
         }
@@ -53,7 +53,7 @@ export default function SummaryCardComponent({ selectedDate, selectedTime, selec
             })
             console.log('Agendamento criado com sucesso:', response.data)
 
-            router.push('/Professional/schedules-home')
+            router.push('/Client/schedules')
 
         } catch (error) {
             console.error('Erro ao criar agendamento:', error)
@@ -76,7 +76,6 @@ export default function SummaryCardComponent({ selectedDate, selectedTime, selec
             <Text style={styles.summaryTitle}>Resumo</Text>
             <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Cliente</Text>
-                <Text style={styles.summaryValue}>{clientLabel ?? '—'}</Text>
             </View>
             <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Data</Text>
@@ -95,9 +94,9 @@ export default function SummaryCardComponent({ selectedDate, selectedTime, selec
                 <Text style={styles.summaryValue}>{selectedJob?.price != null ? `R$ ${Number(selectedJob.price).toFixed(2).replace('.', ',')}` : 'R$ 0,00'}</Text>
             </View>
             <Pressable
-                style={[styles.confirmButton, !(selectedJob && selectedTime && selectedClient) && styles.confirmButtonDisabled]}
+                style={[styles.confirmButton, !(selectedJob && selectedTime) && styles.confirmButtonDisabled]}
                 onPress={handleConfirm}
-                disabled={isSubmitting || !(selectedJob && selectedTime && selectedClient)}
+                disabled={isSubmitting || !(selectedJob && selectedTime)}
             >
                 <Text style={styles.confirmButtonText}>
                     {isSubmitting ? 'Enviando...' : 'Confirmar Agendamento'}

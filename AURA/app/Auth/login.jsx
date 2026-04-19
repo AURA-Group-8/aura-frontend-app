@@ -6,8 +6,10 @@ import { Link, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import axios from 'axios';
 import CardPopUp from '../Professional/_Components/card-popUp';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Login() {
+  let token = null; 
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -16,7 +18,7 @@ export default function Login() {
   const [emailError, setEmailError] = useState('');
   const [senhaError, setSenhaError] = useState('');
 
-  const API_URL = process.env.API_URL || 'http://localhost:8080';
+  const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
 
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
@@ -40,7 +42,7 @@ export default function Login() {
       hasError = true;
     } else if (senha.length < 6) {
       setSenhaError('Senha deve ter pelo menos 6 dígitos');
-      hasError = true;
+    hasError = true;
     } else {
       setSenhaError('');
     }
@@ -60,16 +62,20 @@ export default function Login() {
         });
         console.log('Login response:', loginResponse);
 
-        const token = loginResponse.data?.token || loginResponse.data?.accessToken || loginResponse.data?.access_token;
-        if (typeof window !== 'undefined' && token) {
-          localStorage.setItem('token', token);
-        }
+        token = loginResponse.data?.token || loginResponse.data?.accessToken || loginResponse.data?.access_token;
+        await AsyncStorage.setItem('token', token);
+        await AsyncStorage.setItem('userId', loginResponse.data.id.toString());
+
 
         if (loginResponse.status === 200) {
-          const userResponse = await axios.get(`${API_URL}/api/usuarios`);
-          const users = userResponse.data;
+          const userResponse = await axios.get(`${API_URL}/api/usuarios/${loginResponse.data.id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
 
-          const userData = users[0];
+        
+          const userData = userResponse.data;
 
           if (userData.role.id === 1) {
             setPopupMessage('Login realizado com sucesso!');

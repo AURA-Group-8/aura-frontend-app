@@ -1,12 +1,13 @@
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as NavigationBar from 'expo-navigation-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Platform } from 'react-native';
 import axios from 'axios';
 import NavbarPro from './_Components/NavbarPro';
 import CardSchedule from './_Components/card-schedule';
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export default function Schedules() {
   const [agendamentos, setAgendamentos] = useState([]);
@@ -17,16 +18,20 @@ export default function Schedules() {
   const [sortBy, setSortBy] = useState('id');
   const [direction, setDirection] = useState('ASC');
   const [filterType, setFilterType] = useState('todos') 
-  const API_URL = process.env.API_URL || 'http://localhost:8080';
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
+  const authHeadersRef = useRef({})
+  const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
 
   useEffect(() => {
     if (Platform.OS === 'android') {
       NavigationBar.setVisibilityAsync("hidden");
       NavigationBar.setBehaviorAsync("overlay-swipe");
     }
-    getSchedules();
+    const init = async () => {
+      const token = await AsyncStorage.getItem('token')
+      authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
+      getSchedules();
+    }
+    init();
   }, [page, size, sortBy, direction]);
 
   const router = useRouter();
@@ -59,7 +64,7 @@ export default function Schedules() {
         {
           headers: {
             'Content-Type': 'application/json',
-            ...authHeaders,
+            ...authHeadersRef.current,
           },
         }
       )
@@ -106,7 +111,7 @@ export default function Schedules() {
       }
       
       const response = await axios.delete(`${API_URL}/api/agendamentos/${scheduleId}`, {
-        headers: authHeaders,
+        headers: authHeadersRef.current,
         params: {
           message: mensagem.trim(),
         },
@@ -134,7 +139,7 @@ export default function Schedules() {
     try {
      
       const response = await axios.get(`${API_URL}/api/agendamentos/card`, {
-        headers: authHeaders,
+        headers: authHeadersRef.current,
         params: {
           page,
           size,
