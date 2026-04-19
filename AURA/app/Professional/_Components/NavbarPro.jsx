@@ -6,8 +6,8 @@ const navItems = [
   { label: 'Agenda', icon: 'calendar-outline', route: '/Professional/schedules-home' },
   { label: 'Serviços', icon: 'briefcase-outline', route: '/Professional/services' },
   { label: 'Finanças', icon: 'wallet-outline', route: '/Professional/finances' },
-  { label: 'Clientes', icon: 'people-outline', route: '/Professional/clients' },
-  { label: 'Mais', icon: 'menu-outline', route: '/Professional/more' },
+  { label: 'Clientes', icon: 'people-outline', route: '/Professional/clientScreen' },
+  { label: 'Mais', icon: 'menu-outline', route: '/Professional/moreScreen' },
 ]
 
 export default function NavbarPro({ active = 'Agenda' }) {

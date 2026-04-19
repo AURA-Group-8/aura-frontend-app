@@ -64,6 +64,7 @@ export default function Login() {
 
         token = loginResponse.data?.token || loginResponse.data?.accessToken || loginResponse.data?.access_token;
         await AsyncStorage.setItem('token', token);
+        await AsyncStorage.setItem('userId', loginResponse.data.id.toString());
 
 
         if (loginResponse.status === 200) {
