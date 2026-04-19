@@ -29,7 +29,7 @@ export default function MaisScreen() {
                 </View>
 
                 <View style={styles.menu}>
-                    <TouchableOpacity style={styles.menuItem}>
+                    <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/Professional/settings')}>
                         <Feather name="settings" size={18} color="#7a4b4b" />
                         <Text style={styles.menuText}>Configurações</Text>
                         <Feather name="chevron-right" size={18} color="#7a4b4b" />
