@@ -7,9 +7,12 @@ import {
 } from 'react-native'
 import { Feather, Ionicons } from '@expo/vector-icons'
 import NavbarPro from './_Components/NavbarPro'
-import { router } from 'expo-router'
+import { router, useRouter } from 'expo-router'
 
 export default function MaisScreen() {
+
+    const router = useRouter()
+    
     return (
         <View style={styles.container}>
             
