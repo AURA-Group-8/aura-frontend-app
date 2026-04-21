@@ -106,7 +106,7 @@ export default function Schedules() {
         throw new Error('Motivo do cancelamento é obrigatório')
       }
 
-      if (!token) {
+      if (!authHeadersRef.current || Object.keys(authHeadersRef.current).length === 0) {
         throw new Error('Token de autenticação não encontrado')
       }
       
