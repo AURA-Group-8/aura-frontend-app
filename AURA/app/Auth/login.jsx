@@ -7,9 +7,16 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import axios from 'axios';
 import CardPopUp from '../Professional/_Components/card-popUp';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard
+} from 'react-native';
 
 export default function Login() {
-  let token = null; 
+  let token = null;
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -42,7 +49,7 @@ export default function Login() {
       hasError = true;
     } else if (senha.length < 6) {
       setSenhaError('Senha deve ter pelo menos 6 dígitos');
-    hasError = true;
+      hasError = true;
     } else {
       setSenhaError('');
     }
@@ -57,7 +64,7 @@ export default function Login() {
           data: JSON.stringify({
             email: email,
             password: senha
-          })        
+          })
 
         });
         console.log('Login response:', loginResponse);
@@ -74,7 +81,7 @@ export default function Login() {
             }
           });
 
-        
+
           const userData = userResponse.data;
 
           if (userData.role.id === 1) {
@@ -109,6 +116,8 @@ export default function Login() {
   };
 
   return (
+
+
     <LinearGradient
       colors={['#4f1223', '#8a1c3a']}
       start={{ x: 1, y: 1 }}
@@ -122,52 +131,63 @@ export default function Login() {
         <Ionicons name="chevron-back" size={30} color="#FFF3DC" />
       </Pressable>
 
-      <View style={styles.container}>
-        <Image source={require('../../assets/AURA.png')} style={[styles.img, { width: 250, height: 250 }]} />
-      </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+            <View style={styles.container}>
+              <Image source={require('../../assets/AURA.png')} style={[styles.img, { width: 250, height: 250 }]} />
+            </View>
 
-      <View style={[styles.containerButton, { flex: 2 }]}>
-        <Text style={styles.titulo}>Login</Text>
+            <View style={[styles.containerButton, { flex: 2 }]}>
+              <Text style={styles.titulo}>Login</Text>
 
-        <TextInput
-          placeholder="Email"
-          placeholderTextColor="#FFF3DC80"
-          value={email}
-          onChangeText={setEmail}
-          style={localStyles.input}
-        />
-        {emailError ? <Text style={localStyles.error}>{emailError}</Text> : null}
+              <TextInput
+                placeholder="Email"
+                placeholderTextColor="#FFF3DC80"
+                value={email}
+                onChangeText={setEmail}
+                style={localStyles.input}
+              />
+              {emailError ? <Text style={localStyles.error}>{emailError}</Text> : null}
 
-        <TextInput
-          placeholder="Senha"
-          placeholderTextColor="#FFF3DC80"
-          value={senha}
-          onChangeText={setSenha}
-          secureTextEntry
-          style={localStyles.input}
-        />
-        {senhaError ? <Text style={localStyles.error}>{senhaError}</Text> : null}
-        <Link href="/Auth/forgot-password">
-          <Text style={{ color: '#FFF3DC', textDecorationLine: 'underline' }}>Esqueci minha senha</Text>
-        </Link>
-          <Text style={localStyles.Textlink}> Ainda não tem uma conta? <Text style={localStyles.link} onPress={() => router.replace('/Auth/signUp')}>Cadastre-se</Text></Text>  
+              <TextInput
+                placeholder="Senha"
+                placeholderTextColor="#FFF3DC80"
+                value={senha}
+                onChangeText={setSenha}
+                secureTextEntry
+                style={localStyles.input}
+              />
+              {senhaError ? <Text style={localStyles.error}>{senhaError}</Text> : null}
+              <Link href="/Auth/forgot-password">
+                <Text style={{ color: '#FFF3DC', textDecorationLine: 'underline' }}>Esqueci minha senha</Text>
+              </Link>
+              <Text style={localStyles.Textlink}> Ainda não tem uma conta? <Text style={localStyles.link} onPress={() => router.replace('/Auth/signUp')}>Cadastre-se</Text></Text>
 
-        <Pressable
-          style={[styles.btnLogin, { backgroundColor: '#fff3dc', color: '#5c0f25', opacity: buttonHovered ? 0.8 : 1 }]}
-          onMouseEnter={() => setButtonHovered(true)}
-          onMouseLeave={() => setButtonHovered(false)}
-          onPress={handleLogin}
-        >
-          <Text style={[styles.btnLoginText, { color: '#5c0f25' }]}>ENTRAR</Text>
-        </Pressable>
+              <Pressable
+                style={[styles.btnLogin, { backgroundColor: '#fff3dc', color: '#5c0f25', opacity: buttonHovered ? 0.8 : 1 }]}
+                onMouseEnter={() => setButtonHovered(true)}
+                onMouseLeave={() => setButtonHovered(false)}
+                onPress={handleLogin}
+              >
+                <Text style={[styles.btnLoginText, { color: '#5c0f25' }]}>ENTRAR</Text>
+              </Pressable>
 
-        <CardPopUp
-          visible={popupVisible}
-          message={popupMessage}
-          type={popupType}
-          onClose={() => setPopupVisible(false)}
-        />
-      </View>
+              <CardPopUp
+                visible={popupVisible}
+                message={popupMessage}
+                type={popupType}
+                onClose={() => setPopupVisible(false)}
+              />
+            </View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+
+
     </LinearGradient>
   );
 }
@@ -201,12 +221,12 @@ const localStyles = StyleSheet.create({
   },
   Textlink: {
     color: '#fff6e5',
-    
+
   },
 
   link: {
     color: '#FFF3DC',
-      textDecorationLine: 'underline',
-      fontWeight: '500',
+    textDecorationLine: 'underline',
+    fontWeight: '500',
   },
 });
