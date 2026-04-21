@@ -1,113 +1,136 @@
-import React from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  FlatList
+  FlatList,
+  ActivityIndicator,
+  Alert
 } from 'react-native'
-import { Feather, Ionicons } from '@expo/vector-icons'
+import { Feather } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
-
-const notificacoes = [
-  {
-    id: '1',
-    tipo: 'agendamento',
-    titulo: 'Novo agendamento',
-    descricao:
-      'Maria Silva agendou Design de Sobrancelhas para 04/02 às 09:00',
-    tempo: 'há cerca de 1 ano',
-    lida: false,
-  },
-  {
-    id: '2',
-    tipo: 'cancelado',
-    titulo: 'Agendamento cancelado',
-    descricao:
-      'Julia Mendes cancelou o atendimento de 03/02',
-    tempo: 'há cerca de 1 ano',
-    lida: false,
-  },
-  {
-    id: '3',
-    tipo: 'lembrete',
-    titulo: 'Lembrete',
-    descricao:
-      'Você tem 3 atendimentos agendados para amanhã',
-    tempo: 'há cerca de 1 ano',
-    lida: true,
-  },
-  {
-    id: '4',
-    tipo: 'feedback',
-    titulo: 'Feedback recebido',
-    descricao:
-      'Ana Santos avaliou seu atendimento com 5 estrelas!',
-    tempo: 'há cerca de 1 ano',
-    lida: true,
-  },
-]
+import axios from 'axios'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export default function NotificacoesScreen() {
   const router = useRouter()
+  const [notificacoes, setNotificacoes] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
+
+  const fetchNotificacoes = useCallback(async () => {
+    try {
+      setLoading(true)
+      const token = await AsyncStorage.getItem('token')
+      const userId = await AsyncStorage.getItem('userId') 
+
+      if (!userId) {
+        Alert.alert("Erro", "Usuário não identificado.")
+        return
+      }
+
+      const response = await axios.get(`${API_URL}/api/notificacoes/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { size: 20, direction: 'DESC' }
+      })
+
+      setNotificacoes(response.data.content)
+    } catch (error) {
+      console.error("Erro ao buscar notificações:", error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchNotificacoes()
+  }, [fetchNotificacoes])
+
+  async function marcarComoLida(notificationId) {
+    try {
+      const token = await AsyncStorage.getItem('token')
+      
+      await axios.patch(`${API_URL}/api/notificacoes/${notificationId}`, 
+        { isRead: true },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+
+      setNotificacoes(prev => 
+        prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
+      )
+    } catch (error) {
+      console.error("Erro ao marcar como lida:", error)
+    }
+  }
+
+  async function marcarTodasComoLidas() {
+    const naoLidas = notificacoes.filter(n => !n.isRead)
+    if (naoLidas.length === 0) return
+
+    try {
+      await Promise.all(naoLidas.map(n => marcarComoLida(n.id)))
+      Alert.alert("Sucesso", "Todas as notificações foram marcadas como lidas.")
+    } catch (error) {
+      Alert.alert("Erro", "Falha ao atualizar todas as notificações.")
+    }
+  }
 
   return (
     <View style={styles.container}>
-      
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push('/Professional/moreScreen')}>
-          <Feather name="arrow-left" size={20} color="#5c3b3b" />
+        <TouchableOpacity onPress={() => router.back()}>
+          <Feather name="arrow-left" size={24} color="#5c3b3b" />
         </TouchableOpacity>
         <Text style={styles.title}>Notificações</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={marcarTodasComoLidas}>
           <Text style={styles.markAll}>Marcar todas</Text>
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={notificacoes}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.card,
-              !item.lida && styles.unreadCard
-            ]}
-          >
-            <View style={styles.row}>
-              
-              <View style={styles.icon}>
-                {item.tipo === 'agendamento' && (
-                  <Feather name="calendar" size={18} color="#2ecc71" />
-                )}
-                {item.tipo === 'cancelado' && (
-                  <Feather name="x-circle" size={18} color="#e74c3c" />
-                )}
-                {item.tipo === 'lembrete' && (
-                  <Feather name="bell" size={18} color="#3498db" />
-                )}
-                {item.tipo === 'feedback' && (
-                  <Feather name="star" size={18} color="#f39c12" />
-                )}
-              </View>
+      {loading ? (
+        <ActivityIndicator size="large" color="#5c3b3b" style={{ marginTop: 50 }} />
+      ) : (
+        <FlatList
+          data={notificacoes}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          renderItem={({ item }) => (
+            <TouchableOpacity 
+              onPress={() => marcarComoLida(item.id)}
+              activeOpacity={0.7}
+              style={[
+                styles.card,
+                !item.isRead && styles.unreadCard
+              ]}
+            >
+              <View style={styles.row}>
+                <View style={styles.icon}>
+                  <Feather 
+                    name={item.type === 'CANCELED' ? 'x-circle' : 'bell'} 
+                    size={18} 
+                    color={item.type === 'CANCELED' ? '#e74c3c' : '#3498db'} 
+                  />
+                </View>
 
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>{item.titulo}</Text>
-                <Text style={styles.description}>
-                  {item.descricao}
-                </Text>
-                <Text style={styles.time}>{item.tempo}</Text>
-              </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardTitle}>{item.title || "Notificação"}</Text>
+                  <Text style={styles.description}>{item.description || item.message}</Text>
+                  <Text style={styles.time}>{item.createdAt || 'recentemente'}</Text>
+                </View>
 
-              {!item.lida && <View style={styles.dot} />}
-            </View>
-          </View>
-        )}
-      />
+                {!item.isRead && <View style={styles.dot} />}
+              </View>
+            </TouchableOpacity>
+          )}
+          ListEmptyComponent={<Text style={styles.emptyText}>Nenhuma notificação por enquanto.</Text>}
+        />
+      )}
     </View>
   )
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
