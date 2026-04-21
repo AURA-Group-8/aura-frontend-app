@@ -5,7 +5,6 @@ export default function TimeInput({ label, value, onChangeText }) {
   const [time, setTime] = useState(value || '')
 
   const handleChange = (text) => {
-    // Formatar entrada para HH:MM
     const formatted = text.replace(/[^0-9]/g, '').slice(0, 4)
     let formattedTime = formatted
 

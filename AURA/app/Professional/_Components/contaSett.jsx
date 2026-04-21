@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { 
   View, 
   Text, 
@@ -7,14 +7,84 @@ import {
   ScrollView, 
   Dimensions, 
   KeyboardAvoidingView, 
-  Platform 
+  Platform,
+  ActivityIndicator,
+  Alert
 } from 'react-native'
+import axios from 'axios'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
-const { width, height } = Dimensions.get('window');
-
+const { width } = Dimensions.get('window');
 const scale = (size) => (width / 375) * size;
 
 export default function ContaTab() {
+  const [cnpj, setCnpj] = useState('')
+  const [nome, setNome] = useState('')
+  const [telefone, setTelefone] = useState('')
+  const [loading, setLoading] = useState(true)
+  
+  const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
+
+  const fetchUserData = useCallback(async () => {
+    try {
+      setLoading(true)
+      const token = await AsyncStorage.getItem('token')
+      const userId = await AsyncStorage.getItem('userId')
+
+      if (!userId) return
+
+      const response = await axios.get(`${API_URL}/api/usuarios/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      if (response.data) {
+        setCnpj(response.data.observation || '')
+        setNome(response.data.username || '')
+        setTelefone(response.data.phone || '')
+      }
+    } catch (error) {
+      console.error("Erro ao carregar dados da conta:", error)
+      Alert.alert("Erro", "Não foi possível carregar as informações.")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchUserData()
+  }, [fetchUserData])
+
+  async function handleSaveAccount() {
+    try {
+      const token = await AsyncStorage.getItem('token')
+      const userId = await AsyncStorage.getItem('userId')
+
+      const body = {
+        username: nome,
+        phone: telefone,
+        observation: cnpj,
+        roleId: 1 
+      }
+
+      await axios.patch(`${API_URL}/api/usuarios/${userId}`, body, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      Alert.alert("Sucesso", "Informações atualizadas!")
+    } catch (error) {
+      console.error(error)
+      Alert.alert("Erro", "Falha ao salvar informações.")
+    }
+  }
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#5c0f25" />
+      </View>
+    )
+  }
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -32,8 +102,11 @@ export default function ContaTab() {
             <Text style={styles.label}>CNPJ</Text>
             <TextInput 
               style={styles.input} 
-              value="12.345.678/0001-90" 
+              value={cnpj} 
+              onChangeText={setCnpj}
+              placeholder="12.345.678/0001-90"
               placeholderTextColor="#999"
+              keyboardType="numeric"
             />
           </View>
 
@@ -41,7 +114,9 @@ export default function ContaTab() {
             <Text style={styles.label}>Nome do estabelecimento</Text>
             <TextInput 
               style={styles.input} 
-              value="Studio AURA Estética" 
+              value={nome} 
+              onChangeText={setNome}
+              placeholder="Studio AURA Estética"
             />
           </View>
 
@@ -49,7 +124,9 @@ export default function ContaTab() {
             <Text style={styles.label}>Telefone comercial</Text>
             <TextInput 
               style={styles.input} 
-              value="(11) 99999-0000" 
+              value={telefone} 
+              onChangeText={setTelefone}
+              placeholder="(11) 99999-0000"
               keyboardType="phone-pad"
             />
           </View>
@@ -72,8 +149,6 @@ const styles = StyleSheet.create({
     borderRadius: scale(16),
     width: '100%',
     maxWidth: 500,
-    
-  
     ...Platform.select({
       ios: {
         shadowColor: '#000',
