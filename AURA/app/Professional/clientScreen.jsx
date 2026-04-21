@@ -1,89 +1,123 @@
-import React from 'react'
+import React, { useState, useEffect, useRef } from 'react' 
 import {
   View,
   Text,
   TextInput,
   StyleSheet,
   FlatList,
-  TouchableOpacity
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert
 } from 'react-native'
 import { Ionicons, Feather } from '@expo/vector-icons'
 import NavbarPro from './_Components/NavbarPro'
-
-const clientes = [
-  {
-    id: '1',
-    nome: 'Maria Silva',
-    telefone: '(11) 99999-1234',
-    data: '14 de maio',
-    obs: 'Prefere horários pela manhã'
-  },
-  {
-    id: '2',
-    nome: 'Ana Santos',
-    telefone: '(11) 99999-5678',
-    data: '21 de agosto',
-    obs: ''
-  },
-  {
-    id: '3',
-    nome: 'Carla Oliveira',
-    telefone: '(11) 99999-9012',
-    data: '02 de dezembro',
-    obs: 'Alérgica a alguns produtos'
-  }
-]
+import axios from 'axios'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export default function ClientesScreen() {
+  const [clientes, setClientes] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  
+  const authHeadersRef = useRef(null)
+  const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token')
+        authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
+        await fetchClientes()
+      } catch (err) {
+        console.error("Erro ao iniciar:", err)
+      }
+    }
+    init()
+  }, [])
+
+  async function fetchClientes() {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const response = await axios.get(`${API_URL}/api/usuarios`, {
+        headers: authHeadersRef.current,
+      })
+
+      setClientes(response.data) 
+      
+    } catch (err) {
+      console.error('❌ Erro ao buscar clientes:', err)
+      setError('Não foi possível carregar a lista de clientes.')
+      Alert.alert("Erro", "Falha ao conectar com o servidor.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Clientes</Text>
-      
-      <View style={styles.containerGeneral}>
 
+      <View style={styles.containerGeneral}>
         <View style={styles.searchContainer}>
           <TextInput
             placeholder="Buscar cliente..."
             style={styles.input}
           />
-          <TouchableOpacity style={styles.sendButton}>
-            <Ionicons name="send" size={18} color="#7a4b4b" />
+          <TouchableOpacity style={styles.sendButton} onPress={fetchClientes}>
+            <Ionicons name="refresh" size={18} color="#7a4b4b" />
           </TouchableOpacity>
         </View>
 
-        {/* Lista */}
-        <FlatList
-          data={clientes}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.nome}>{item.nome}</Text>
-                <Feather name="message-circle" size={18} color="#7a4b4b" />
-              </View>
+        {loading ? (
+          <View style={{ flex: 1, justifyContent: 'center' }}>
+            <ActivityIndicator size="large" color="#7a4b4b" />
+          </View>
+        ) : (
+          <View style={{ flex: 1 }}>
+            <FlatList
+              data={clientes}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => {
+                return (
+                  <View style={styles.card}>
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.nome}>{item.username}</Text>
+                      <Feather name="message-circle" size={18} color="#7a4b4b" />
+                    </View>
 
-              <View style={styles.row}>
-                <Feather name="phone" size={14} color="#7a4b4b" />
-                <Text style={styles.text}>{item.telefone}</Text>
-              </View>
+                    <View style={styles.row}>
+                      <Feather name="phone" size={14} color="#7a4b4b" />
+                      <Text style={styles.text}>{item.phone || 'Sem telefone'}</Text>
+                    </View>
 
-              <View style={styles.row}>
-                <Feather name="calendar" size={14} color="#7a4b4b" />
-                <Text style={styles.text}>{item.data}</Text>
-              </View>
+                    <View style={styles.row}>
+                      <Feather name="calendar" size={14} color="#7a4b4b" />
+                      <Text style={styles.text}>
+                        {item.dateOfBirth ? item.dateOfBirth.split('-').reverse().join('/') : 'N/A'}
+                      </Text>
+                    </View>
 
-              {item.obs !== '' && (
-                <View style={styles.obs}>
-                  <Text style={styles.obsText}>{item.obs}</Text>
-                </View>
-              )}
-            </View>
-          )}
-        />
+                    {item.observation && item.observation !== 'string' && (
+                      <View style={styles.obs}>
+                        <Text style={styles.obsText}>{item.observation}</Text>
+                      </View>
+                    )}
+                  </View>
+                )
+              }}
+              ListEmptyComponent={() => {
+                return (
+                  <Text style={{ textAlign: 'center', marginTop: 20 }}>Nenhum usuário cadastrado.</Text>
+                )
+              }}
+            />
+          </View>
+        )}
       </View>
 
-      <NavbarPro active="Clientes"/>
-
+      <NavbarPro active="Clientes" />
     </View>
   )
 }
