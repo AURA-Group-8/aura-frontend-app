@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { styles } from '../../styles/styles';
-import { Text, View, Image, Pressable, TextInput, StyleSheet } from 'react-native';
+import { Text, View, Image, Pressable, TextInput, StyleSheet, Keyboard } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -11,8 +11,7 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   Platform,
-  TouchableWithoutFeedback,
-  Keyboard
+  TouchableWithoutFeedback
 } from 'react-native';
 
 export default function Login() {
@@ -115,33 +114,60 @@ export default function Login() {
     }
   };
 
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+    });
+
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
   return (
-
-
-    <LinearGradient
-      colors={['#4f1223', '#8a1c3a']}
-      start={{ x: 1, y: 1 }}
-      end={{ x: 0, y: 0 }}
-      style={localStyles.container}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Pressable
-        onPress={() => router.back()}
-        style={localStyles.backButton}
-      >
-        <Ionicons name="chevron-back" size={30} color="#FFF3DC" />
-      </Pressable>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <LinearGradient
+          colors={['#4f1223', '#8a1c3a']}
+          style={{ flex: 1 }}
+        >
+          <Pressable onPress={() => router.back()} style={localStyles.backButton}>
+              <Ionicons name="chevron-back" size={30} color="#FFF3DC" />
+            </Pressable>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-            <View style={styles.container}>
-              <Image source={require('../../assets/AURA.png')} style={[styles.img, { width: 250, height: 250 }]} />
-            </View>
+          <ScrollView
+            contentContainerStyle={{
+              flexGrow: 1,
+              justifyContent: keyboardVisible ? 'flex-start' : 'center',
+              alignItems: 'center',
+              paddingVertical: 60,
+              marginTop: keyboardVisible ? 100 : 0
+            }}
+            keyboardShouldPersistTaps="handled"
+          >
+            
+            {!keyboardVisible && (
+              <Image
+                source={require('../../assets/AURA.png')}
+                style={{
+                  width: 250,
+                  height: 250,
+                  marginBottom: 20
+                }}
+              />
+            )}
 
-            <View style={[styles.containerButton, { flex: 2 }]}>
+            <View style={{ width: '100%', alignItems: 'center' }}>
               <Text style={styles.titulo}>Login</Text>
 
               <TextInput
@@ -162,18 +188,21 @@ export default function Login() {
                 style={localStyles.input}
               />
               {senhaError ? <Text style={localStyles.error}>{senhaError}</Text> : null}
-              <Link href="/Auth/forgot-password">
-                <Text style={{ color: '#FFF3DC', textDecorationLine: 'underline' }}>Esqueci minha senha</Text>
-              </Link>
-              <Text style={localStyles.Textlink}> Ainda não tem uma conta? <Text style={localStyles.link} onPress={() => router.replace('/Auth/signUp')}>Cadastre-se</Text></Text>
+
+              <Text style={localStyles.Textlink}>
+                Não tem uma conta?{' '}
+                <Text style={localStyles.link} onPress={() => router.push('/Auth/signUp')}>
+                  Cadastre-se
+                </Text>
+              </Text>
 
               <Pressable
-                style={[styles.btnLogin, { backgroundColor: '#fff3dc', color: '#5c0f25', opacity: buttonHovered ? 0.8 : 1 }]}
-                onMouseEnter={() => setButtonHovered(true)}
-                onMouseLeave={() => setButtonHovered(false)}
+                style={[styles.btnLogin, { backgroundColor: '#fff3dc' }]}
                 onPress={handleLogin}
               >
-                <Text style={[styles.btnLoginText, { color: '#5c0f25' }]}>ENTRAR</Text>
+                <Text style={[styles.btnLoginText, { color: '#5c0f25' }]}>
+                  ENTRAR
+                </Text>
               </Pressable>
 
               <CardPopUp
@@ -184,11 +213,9 @@ export default function Login() {
               />
             </View>
           </ScrollView>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
-
-
-    </LinearGradient>
+        </LinearGradient>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -214,13 +241,17 @@ const localStyles = StyleSheet.create({
     padding: 12,
     borderRadius: 20,
     fontWeight: '500',
+    marginBottom: 20,
   },
   error: {
     color: '#fa8585',
     fontSize: 12,
+    marginBottom: 10,
+    marginTop: -10,
   },
   Textlink: {
     color: '#fff6e5',
+    marginBottom: 20,
 
   },
 
@@ -228,5 +259,6 @@ const localStyles = StyleSheet.create({
     color: '#FFF3DC',
     textDecorationLine: 'underline',
     fontWeight: '500',
+    marginBottom: 40,
   },
 });

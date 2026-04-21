@@ -1,10 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { styles } from '../../styles/styles';
 import { Text, View, Image, Pressable, TextInput, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import axios from 'axios';
 import CardPopUp from '../Professional/_Components/card-popUp';
+import {
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard
+} from 'react-native';
 
 export default function SignUp() {
   const router = useRouter();
@@ -106,97 +113,142 @@ export default function SignUp() {
 
       }
     }
-
   }
 
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+    });
+
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   return (
-    <View style={localStyles.container}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={{ flex: 1, backgroundColor: '#281111' }}>
 
-      <Pressable
-        onPress={() => router.replace('/Auth/login')}
-        style={localStyles.backButton}
-      >
-        <Ionicons name="chevron-back" size={30} color="#FFF3DC" />
-      </Pressable>
 
-      <View style={styles.container}>
-        <Image source={require('../../assets/AURA.png')} style={[styles.img, { width: 150, height: 150 }]} />
-      </View>
+          <Pressable
+            onPress={() => router.replace('/Auth/login')}
+            style={localStyles.backButton}
+          >
+            <Ionicons name="chevron-back" size={30} color="#FFF3DC" />
+          </Pressable>
 
-      <View style={[styles.containerButton, { flex: 4 }]}>
-        <Text style={styles.titulo}>Criar Conta</Text>
+          <ScrollView
+            contentContainerStyle={{
+              flexGrow: 1,
+              justifyContent: keyboardVisible ? 'flex-start' : 'center',
+              alignItems: 'center',
+              paddingVertical: 40,
+              marginTop: keyboardVisible ? 100 : 0
+            }}
+            keyboardShouldPersistTaps="handled"
+          >
 
-        <TextInput
-          placeholder="Nome Completo"
-          placeholderTextColor="#FFF3DC80"
-          value={name}
-          onChangeText={setName}
-          style={localStyles.input}
-        />
-        {nameError ? <Text style={localStyles.error}>{nameError}</Text> : null}
+            {!keyboardVisible && (
+              <Image
+                source={require('../../assets/AURA.png')}
+                style={{ width: 150, height: 150, marginBottom: 20 }}
+              />
+            )}
 
-        <TextInput
-          placeholder="Email"
-          placeholderTextColor="#FFF3DC80"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          style={localStyles.input}
-        />
-        {emailError ? <Text style={localStyles.error}>{emailError}</Text> : null}
+            <View style={{ width: '100%', alignItems: 'center' }}>
+              <Text style={styles.titulo}>Criar Conta</Text>
 
-        <TextInput
-          placeholder="Telefone"
-          placeholderTextColor="#FFF3DC80"
-          value={phone}
-          onChangeText={(text) => setPhone(formatPhone(text))}
-          keyboardType="phone-pad"
-          style={localStyles.input}
-          maxLength={16}
-        />
-        {phoneError ? <Text style={localStyles.error}>{phoneError}</Text> : null}
+              <TextInput
+                placeholder="Nome Completo"
+                placeholderTextColor="#FFF3DC80"
+                value={name}
+                onChangeText={setName}
+                style={localStyles.input}
+              />
+              {nameError ? <Text style={localStyles.error}>{nameError}</Text> : null}
 
-        <TextInput
-          placeholder="Senha"
-          placeholderTextColor="#FFF3DC80"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          style={localStyles.input}
-        />
-        {passwordError ? <Text style={localStyles.error}>{passwordError}</Text> : null}
+              <TextInput
+                placeholder="Email"
+                placeholderTextColor="#FFF3DC80"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                style={localStyles.input}
+              />
+              {emailError ? <Text style={localStyles.error}>{emailError}</Text> : null}
 
-        <Text style={localStyles.Textlink}>
-          Já tem uma conta?{' '}
-          <Text style={localStyles.link} onPress={() => router.replace('/Auth/login')}>
-            Faça login
-          </Text>
-        </Text>
+              <TextInput
+                placeholder="Telefone"
+                placeholderTextColor="#FFF3DC80"
+                value={phone}
+                onChangeText={(text) => setPhone(formatPhone(text))}
+                keyboardType="phone-pad"
+                style={localStyles.input}
+                maxLength={16}
+              />
+              {phoneError ? <Text style={localStyles.error}>{phoneError}</Text> : null}
 
-        <Pressable
-          style={[styles.btnLogin, { backgroundColor: '#fff3dc', opacity: buttonHovered ? 0.8 : 1 }]}
-          onPress={SignUp}
-          onMouseEnter={() => setButtonHovered(true)}
-          onMouseLeave={() => setButtonHovered(false)}
-        >
-          <Text style={[styles.btnLoginText, { color: '#281111' }]}>CADASTRAR</Text>
-        </Pressable>
-      </View>
+              <TextInput
+                placeholder="Senha"
+                placeholderTextColor="#FFF3DC80"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                style={localStyles.input}
+              />
+              {passwordError ? <Text style={localStyles.error}>{passwordError}</Text> : null}
 
-      <CardPopUp
-        visible={popupVisible}
-        message={popupMessage}
-        type={popupType}
-        onClose={() => {
-          setPopupVisible(false);
+              <Text style={localStyles.Textlink}>
+                Já tem uma conta?{' '}
+                <Text
+                  style={localStyles.link}
+                  onPress={() => router.replace('/Auth/login')}
+                >
+                  Faça login
+                </Text>
+              </Text>
 
-          if (popupType === 'success') {
-            router.push('/Auth/login');
-          }
-        }}
-      />
-    </View>
+              <Pressable
+                style={[
+                  styles.btnLogin,
+                  { backgroundColor: '#fff3dc', opacity: buttonHovered ? 0.8 : 1 }
+                ]}
+                onPress={SignUp}
+              >
+                <Text style={[styles.btnLoginText, { color: '#281111' }]}>
+                  CADASTRAR
+                </Text>
+              </Pressable>
+            </View>
+
+          </ScrollView>
+
+          <CardPopUp
+            visible={popupVisible}
+            message={popupMessage}
+            type={popupType}
+            onClose={() => {
+              setPopupVisible(false);
+              if (popupType === 'success') {
+                router.push('/Auth/login');
+              }
+            }}
+          />
+
+        </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -209,7 +261,7 @@ const localStyles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: 20,
+    top: 40,
     left: 20,
     zIndex: 10,
     padding: 10,
@@ -222,22 +274,24 @@ const localStyles = StyleSheet.create({
     width: 300,
     padding: 12,
     borderRadius: 20,
-    marginBottom: 10,
+    marginBottom: 20,
     fontWeight: '500',
   },
   error: {
     color: '#fa8585',
     fontSize: 12,
+    marginBottom: 10,
   },
 
   Textlink: {
     color: '#fff6e5',
-    
+    marginBottom: 20,
+
   },
 
   link: {
     color: '#FFF3DC',
-      textDecorationLine: 'underline',
-      fontWeight: '500',
+    textDecorationLine: 'underline',
+    fontWeight: '500',
   },
 });

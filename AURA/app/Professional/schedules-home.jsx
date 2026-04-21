@@ -393,6 +393,7 @@ const styles = StyleSheet.create({
     gap: 20,
     paddingHorizontal: 20,
     marginBottom: 20,
+    marginTop: 40,
   },
 
   title: {

@@ -51,7 +51,6 @@ export default function ClientesScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Lista */}
         <FlatList
           data={clientes}
           keyExtractor={(item) => item.id}
