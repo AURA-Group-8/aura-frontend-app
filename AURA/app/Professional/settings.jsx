@@ -12,7 +12,6 @@ import ContaTab from './_Components/contaSett';
 import { useRouter } from 'expo-router'
 import { Feather } from '@expo/vector-icons'
 
-// 2. Pegar a largura da tela
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PADDING = 16;
 const TAB_WIDTH = SCREEN_WIDTH - (PADDING * 2);
