@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 24,
-    marginTop: 8,
+    marginTop: 40,
   },
   headerTitle: {
     fontSize: 28,
