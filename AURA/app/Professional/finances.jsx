@@ -27,13 +27,14 @@ export default function Finances() {
   const [loading, setLoading] = useState(true)
   const [historyLoading, setHistoryLoading] = useState(false)
   const [error, setError] = useState('')
-
+  const [insights, setInsights] = useState([]);
   const [insightsModalOpen, setInsightsModalOpen] = useState(false);
+  const [insightsLoading, setInsightsLoading] = useState(false);
 
   const authHeadersRef = useRef(null)
 
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
-
+  const ETL_URL = process.env.EXPO_PUBLIC_API_ETL_URL || 'http://localhost:8000'
   const router = useRouter()
 
   useEffect(() => {
@@ -189,6 +190,37 @@ export default function Finances() {
     return (value / maxValue) * 150
   }
 
+  async function handleOpenInsights() {
+    try {
+      setInsightsLoading(true);
+
+      const response = await axios.get(`${ETL_URL}/api/v1/insights`, {
+        headers: authHeadersRef.current,
+        params: {
+          page: 1,
+          page_size: 5
+        }
+      });
+
+      const mapped = response.data.items.map((item, index) => ({
+        id: index + 1,
+        tag: item.category?.toUpperCase() || 'GERAL',
+        title: item.title,
+        description: item.text,
+        icon: 'bulb-outline',
+        color: '#FFC107'
+      }));
+
+      setInsights(mapped);
+      setInsightsModalOpen(true);
+
+    } catch (err) {
+      console.error('Erro ao buscar insights:', err);
+    } finally {
+      setInsightsLoading(false); // 🔥 termina loading
+    }
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -204,9 +236,14 @@ export default function Finances() {
                 styles.headerButton,
                 pressed && styles.headerButtonPressed,
               ]}
-              onPress={() => setInsightsModalOpen(true)}
+              onPress={handleOpenInsights}
+              disabled={insightsLoading}
             >
-              <Ionicons name="bulb-outline" size={24} color="#FFC107" />
+              {insightsLoading ? (
+                <ActivityIndicator size="small" color="#FFC107" />
+              ) : (
+                <Ionicons name="bulb-outline" size={24} color="#FFC107" />
+              )}
             </Pressable>
             <Pressable
               style={({ pressed }) => [
@@ -387,10 +424,11 @@ export default function Finances() {
           </View>
         </View>
       </Modal>
-      
+
       <BusinessInsightsModal
         visible={insightsModalOpen}
         onClose={() => setInsightsModalOpen(false)}
+        data={insights}
       />
       <NavbarPro active="Finanças" />
     </View>
