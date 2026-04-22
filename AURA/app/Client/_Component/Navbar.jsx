@@ -13,7 +13,7 @@ export default function Navbar() {
         <AntDesign name="schedule" size={28} color="#982546" />
       </Pressable>
 
-      <Pressable style={styles.navItem} onPress={() => router.replace('/Client/newScheduleClient')}>
+      <Pressable style={styles.navItem} onPress={() => router.replace('/Client/history')}>
         <AntDesign name="clock-circle" size={28} color="#982546" />
       </Pressable>
 

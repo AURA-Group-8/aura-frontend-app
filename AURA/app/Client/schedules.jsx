@@ -17,7 +17,8 @@ export default function SchedulesClient() {
   const [totalItems, setTotalItems] = useState(0);
   const [sortBy, setSortBy] = useState('id');
   const [direction, setDirection] = useState('ASC');
-  const [filterType, setFilterType] = useState('todos') 
+  const [filterType, setFilterType] = useState('todos')
+  const [userIdRef, setUserIdRef] = useState(null);
   const authHeadersRef = useRef({})
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -26,13 +27,20 @@ export default function SchedulesClient() {
       NavigationBar.setVisibilityAsync("hidden");
       NavigationBar.setBehaviorAsync("overlay-swipe");
     }
+    if (!userIdRef) return;
+    
+    getSchedules();
+  }, [page, size, sortBy, direction, userIdRef]);
+
+  useEffect(() => {
     const init = async () => {
       const token = await AsyncStorage.getItem('token')
+      const userId = await AsyncStorage.getItem('userId')
       authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
-      getSchedules();
+      setUserIdRef(userId)
     }
     init();
-  }, [page, size, sortBy, direction]);
+  }, []);
 
   const router = useRouter();
 
@@ -137,7 +145,6 @@ export default function SchedulesClient() {
 
   async function getSchedules() {
     try {
-     
       const response = await axios.get(`${API_URL}/api/agendamentos/card`, {
         headers: authHeadersRef.current,
         params: {
@@ -156,7 +163,7 @@ export default function SchedulesClient() {
           : [];
 
       const formattedSchedules = content.map((agendamento) => ({
-        id: agendamento.idScheduling,
+        id: agendamento.idScheduling || agendamento.id,
         userName: agendamento.userName,
         jobsNames: agendamento.jobsNames,
         startDatetime: agendamento.startDatetime,
