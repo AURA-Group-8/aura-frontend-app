@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   container: {
-    flex: 2,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -23,6 +23,7 @@ export const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 30,
     color: '#FFF3DC',
+    marginBottom: 30,
   },
 
   btnLogin: {

@@ -70,22 +70,15 @@ export default function ClientesScreen() {
           </TouchableOpacity>
         </View>
 
-        {loading ? (
-          <View style={{ flex: 1, justifyContent: 'center' }}>
-            <ActivityIndicator size="large" color="#7a4b4b" />
-          </View>
-        ) : (
-          <View style={{ flex: 1 }}>
-            <FlatList
-              data={clientes}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => {
-                return (
-                  <View style={styles.card}>
-                    <View style={styles.cardHeader}>
-                      <Text style={styles.nome}>{item.username}</Text>
-                      <Feather name="message-circle" size={18} color="#7a4b4b" />
-                    </View>
+        <FlatList
+          data={clientes}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.nome}>{item.nome}</Text>
+                <Feather name="message-circle" size={18} color="#7a4b4b" />
+              </View>
 
                     <View style={styles.row}>
                       <Feather name="phone" size={14} color="#7a4b4b" />

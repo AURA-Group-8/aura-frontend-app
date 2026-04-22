@@ -1,9 +1,10 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import axios from 'axios'
 
 export default function TimeSelectionComponent({ selectedDate, selectedJob, selectedTime, setSelectedTime }) {
-    const [availableTimes, setAvailableTimes] = useState([])
+    const [availableTimes, setAvailableTimes] = useState([]) 
     const authHeadersRef = useRef({})
     const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
 

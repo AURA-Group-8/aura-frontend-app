@@ -7,6 +7,7 @@ import { Platform } from 'react-native'
 import axios from 'axios'
 import NavbarPro from './_Components/NavbarPro'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import BusinessInsightsModal from './_Components/BusinessInsightsModal';
 
 export default function Finances() {
   const [monthlyRevenue, setMonthlyRevenue] = useState('0')
@@ -26,6 +27,8 @@ export default function Finances() {
   const [loading, setLoading] = useState(true)
   const [historyLoading, setHistoryLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const [insightsModalOpen, setInsightsModalOpen] = useState(false);
 
   const authHeadersRef = useRef(null)
 
@@ -101,7 +104,7 @@ export default function Finances() {
   }
 
   const addRevenue = (amount) => {
-    
+
     const currentAmount = parseFloat(monthlyRevenue.replace(',', '.'))
     const newAmount = (currentAmount + amount).toFixed(2).replace('.', ',')
     setMonthlyRevenue(newAmount)
@@ -201,7 +204,7 @@ export default function Finances() {
                 styles.headerButton,
                 pressed && styles.headerButtonPressed,
               ]}
-              
+              onPress={() => setInsightsModalOpen(true)}
             >
               <Ionicons name="bulb-outline" size={24} color="#FFC107" />
             </Pressable>
@@ -384,7 +387,11 @@ export default function Finances() {
           </View>
         </View>
       </Modal>
-
+      
+      <BusinessInsightsModal
+        visible={insightsModalOpen}
+        onClose={() => setInsightsModalOpen(false)}
+      />
       <NavbarPro active="Finanças" />
     </View>
   )
@@ -408,7 +415,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 24,
-    marginTop: 8,
+    marginTop: 40,
   },
   headerTitle: {
     fontSize: 28,
