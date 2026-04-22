@@ -18,8 +18,7 @@ export default function SchedulesClient() {
   const [sortBy, setSortBy] = useState('id');
   const [direction, setDirection] = useState('ASC');
   const [filterType, setFilterType] = useState('todos')
-  const [userIdRef, setUserIdRef] = useState(null);
-  const authHeadersRef = useRef({})
+  const [userIdRef, setUserIdRef] = useState(null);  const [userNameRef, setUserNameRef] = useState(null);  const authHeadersRef = useRef({})
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
 
   useEffect(() => {
@@ -27,17 +26,19 @@ export default function SchedulesClient() {
       NavigationBar.setVisibilityAsync("hidden");
       NavigationBar.setBehaviorAsync("overlay-swipe");
     }
-    if (!userIdRef) return;
+    if (!userIdRef || !userNameRef) return;
     
     getSchedules();
-  }, [page, size, sortBy, direction, userIdRef]);
+  }, [page, size, sortBy, direction, userIdRef, userNameRef]);
 
   useEffect(() => {
     const init = async () => {
       const token = await AsyncStorage.getItem('token')
       const userId = await AsyncStorage.getItem('userId')
+      const userName = await AsyncStorage.getItem('userName')
       authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
       setUserIdRef(userId)
+      setUserNameRef(userName)
     }
     init();
   }, []);
@@ -162,7 +163,12 @@ export default function SchedulesClient() {
           ? responseData
           : [];
 
-      const formattedSchedules = content.map((agendamento) => ({
+      // Filtrar agendamentos apenas do usuário logado por userName
+      const userSchedules = content.filter((agendamento) => 
+        String(agendamento.userName).toLowerCase() === String(userNameRef).toLowerCase()
+      );
+
+      const formattedSchedules = userSchedules.map((agendamento) => ({
         id: agendamento.idScheduling || agendamento.id,
         userName: agendamento.userName,
         jobsNames: agendamento.jobsNames,
@@ -191,7 +197,7 @@ export default function SchedulesClient() {
     
       setAgendamentos(sortedSchedules);
       setTotalPages(responseData.totalPages ?? 1);
-      setTotalItems(responseData.totalElements ?? content.length);
+      setTotalItems(userSchedules.length);
       setPage(responseData.page ?? responseData.pageNumber ?? page);
       setSize(responseData.size ?? responseData.pageSize ?? size);
     }
