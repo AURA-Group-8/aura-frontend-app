@@ -157,13 +157,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontWeight: 'bold',
-    textAlign: 'center',
+    textAlign: 'left',
     marginBottom: 16,
     color: '#5c0f25',
     backgroundColor: '#fff3dc',
     height: 60,
     fontSize: 28,
-    paddingTop: 15
+    paddingTop: 15,
+    marginTop: 40,
   },
   containerGeneral: {
     flex: 1,

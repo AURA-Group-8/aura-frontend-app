@@ -434,6 +434,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E0D8',
+    marginTop: 40,
   },
   headerTitle: {
     fontSize: 17,
