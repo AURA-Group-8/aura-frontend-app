@@ -17,8 +17,8 @@ export default function SchedulesClient() {
   const [totalItems, setTotalItems] = useState(0);
   const [sortBy, setSortBy] = useState('id');
   const [direction, setDirection] = useState('ASC');
-  const [filterType, setFilterType] = useState('todos') 
-  const authHeadersRef = useRef({})
+  const [filterType, setFilterType] = useState('todos')
+  const [userIdRef, setUserIdRef] = useState(null);  const [userNameRef, setUserNameRef] = useState(null);  const authHeadersRef = useRef({})
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
 
   useEffect(() => {
@@ -26,13 +26,22 @@ export default function SchedulesClient() {
       NavigationBar.setVisibilityAsync("hidden");
       NavigationBar.setBehaviorAsync("overlay-swipe");
     }
+    if (!userIdRef || !userNameRef) return;
+    
+    getSchedules();
+  }, [page, size, sortBy, direction, userIdRef, userNameRef]);
+
+  useEffect(() => {
     const init = async () => {
       const token = await AsyncStorage.getItem('token')
+      const userId = await AsyncStorage.getItem('userId')
+      const userName = await AsyncStorage.getItem('userName')
       authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
-      getSchedules();
+      setUserIdRef(userId)
+      setUserNameRef(userName)
     }
     init();
-  }, [page, size, sortBy, direction]);
+  }, []);
 
   const router = useRouter();
 
@@ -137,7 +146,6 @@ export default function SchedulesClient() {
 
   async function getSchedules() {
     try {
-     
       const response = await axios.get(`${API_URL}/api/agendamentos/card`, {
         headers: authHeadersRef.current,
         params: {
@@ -155,8 +163,13 @@ export default function SchedulesClient() {
           ? responseData
           : [];
 
-      const formattedSchedules = content.map((agendamento) => ({
-        id: agendamento.idScheduling,
+      // Filtrar agendamentos apenas do usuário logado por userName
+      const userSchedules = content.filter((agendamento) => 
+        String(agendamento.userName).toLowerCase() === String(userNameRef).toLowerCase()
+      );
+
+      const formattedSchedules = userSchedules.map((agendamento) => ({
+        id: agendamento.idScheduling || agendamento.id,
         userName: agendamento.userName,
         jobsNames: agendamento.jobsNames,
         startDatetime: agendamento.startDatetime,
@@ -184,7 +197,7 @@ export default function SchedulesClient() {
     
       setAgendamentos(sortedSchedules);
       setTotalPages(responseData.totalPages ?? 1);
-      setTotalItems(responseData.totalElements ?? content.length);
+      setTotalItems(userSchedules.length);
       setPage(responseData.page ?? responseData.pageNumber ?? page);
       setSize(responseData.size ?? responseData.pageSize ?? size);
     }

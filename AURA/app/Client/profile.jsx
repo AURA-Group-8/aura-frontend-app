@@ -205,11 +205,6 @@ export default function Profile() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF3DC" />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Mais</Text>
-      </View>
-
       <View style={styles.container}>
 
         {/* Card de perfil */}
@@ -251,6 +246,22 @@ export default function Profile() {
 
         {/* Card de menu */}
         <View style={styles.menuCard}>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/Client/notifications')}
+            activeOpacity={0.6}
+          >
+            <View style={styles.menuLeft}>
+              <Feather name="bell" size={22} color="#3D1515" />
+              <Text style={styles.menuLabel}>
+                Notificações
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={20} color="#8C8C8C" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
 
           <TouchableOpacity
             style={styles.menuItem}
