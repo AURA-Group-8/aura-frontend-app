@@ -191,35 +191,35 @@ export default function Finances() {
   }
 
   async function handleOpenInsights() {
-  try {
-    setInsightsLoading(true); 
+    try {
+      setInsightsLoading(true);
 
-    const response = await axios.get(`${ETL_URL}/api/v1/insights`, {
-      headers: authHeadersRef.current,
-      params: {
-        page: 1,
-        page_size: 5
-      }
-    });
+      const response = await axios.get(`${ETL_URL}/api/v1/insights`, {
+        headers: authHeadersRef.current,
+        params: {
+          page: 1,
+          page_size: 5
+        }
+      });
 
-    const mapped = response.data.items.map((item, index) => ({
-      id: index + 1,
-      tag: item.category?.toUpperCase() || 'GERAL',
-      title: item.title,
-      description: item.text,
-      icon: 'bulb-outline',
-      color: '#FFC107'
-    }));
+      const mapped = response.data.items.map((item, index) => ({
+        id: index + 1,
+        tag: item.category?.toUpperCase() || 'GERAL',
+        title: item.title,
+        description: item.text,
+        icon: 'bulb-outline',
+        color: '#FFC107'
+      }));
 
-    setInsights(mapped);
-    setInsightsModalOpen(true);
+      setInsights(mapped);
+      setInsightsModalOpen(true);
 
-  } catch (err) {
-    console.error('Erro ao buscar insights:', err);
-  } finally {
-    setInsightsLoading(false); // 🔥 termina loading
+    } catch (err) {
+      console.error('Erro ao buscar insights:', err);
+    } finally {
+      setInsightsLoading(false); // 🔥 termina loading
+    }
   }
-}
 
   return (
     <View style={styles.container}>
@@ -237,8 +237,13 @@ export default function Finances() {
                 pressed && styles.headerButtonPressed,
               ]}
               onPress={handleOpenInsights}
+              disabled={insightsLoading}
             >
-              <Ionicons name="bulb-outline" size={24} color="#FFC107" />
+              {insightsLoading ? (
+                <ActivityIndicator size="small" color="#FFC107" />
+              ) : (
+                <Ionicons name="bulb-outline" size={24} color="#FFC107" />
+              )}
             </Pressable>
             <Pressable
               style={({ pressed }) => [
