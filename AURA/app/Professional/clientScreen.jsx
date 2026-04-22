@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react' 
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -15,7 +15,9 @@ import axios from 'axios'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export default function ClientesScreen() {
-  const [clientes, setClientes] = useState([])
+  const [clientes, setClientes] = useState([]) // Lista completa do banco
+  const [filteredClientes, setFilteredClientes] = useState([]) // Lista que aparece na tela
+  const [searchText, setSearchText] = useState('') // Texto da busca
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   
@@ -39,12 +41,14 @@ export default function ClientesScreen() {
     try {
       setLoading(true)
       setError(null)
+      setSearchText('') // Limpa a busca ao recarregar do banco
       
       const response = await axios.get(`${API_URL}/api/usuarios`, {
         headers: authHeadersRef.current,
       })
 
       setClientes(response.data) 
+      setFilteredClientes(response.data) // Inicializa a lista filtrada com todos os dados
       
     } catch (err) {
       console.error('❌ Erro ao buscar clientes:', err)
@@ -53,6 +57,19 @@ export default function ClientesScreen() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Função para filtrar a lista localmente
+  const handleFilter = () => {
+    if (searchText.trim() === '') {
+      setFilteredClientes(clientes) // Se a busca estiver vazia, mostra todos
+      return
+    }
+
+    const filtered = clientes.filter(cliente => 
+      cliente.username.toLowerCase().includes(searchText.toLowerCase())
+    )
+    setFilteredClientes(filtered)
   }
 
   return (
@@ -64,21 +81,39 @@ export default function ClientesScreen() {
           <TextInput
             placeholder="Buscar cliente..."
             style={styles.input}
+            value={searchText}
+            onChangeText={setSearchText} // Atualiza o texto enquanto digita
           />
-          <TouchableOpacity style={styles.sendButton} onPress={fetchClientes}>
-            <Ionicons name="refresh" size={18} color="#7a4b4b" />
+          
+          {/* Botão de Confirmar Busca */}
+          <TouchableOpacity style={styles.actionButton} onPress={handleFilter}>
+            <Ionicons name="search" size={20} color="#7a4b4b" />
+          </TouchableOpacity>
+
+          {/* Botão de Recarregar do Banco */}
+          <TouchableOpacity style={styles.actionButton} onPress={fetchClientes}>
+            <Ionicons name="refresh" size={20} color="#7a4b4b" />
           </TouchableOpacity>
         </View>
 
-        <FlatList
-          data={clientes}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.nome}>{item.nome}</Text>
-                <Feather name="message-circle" size={18} color="#7a4b4b" />
-              </View>
+        {loading ? (
+          <View style={{ flex: 1, justifyContent: 'center' }}>
+            <ActivityIndicator size="large" color="#7a4b4b" />
+          </View>
+        ) : (
+          <View style={{ flex: 1 }}>
+            <FlatList
+              data={filteredClientes} // Agora usamos a lista filtrada no FlatList
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => {
+                return (
+                  <View style={styles.card}>
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.nome}>{item.username}</Text>
+                      <TouchableOpacity>
+                        <Feather name="message-circle" size={18} color="#7a4b4b" />
+                      </TouchableOpacity>
+                    </View>
 
                     <View style={styles.row}>
                       <Feather name="phone" size={14} color="#7a4b4b" />
@@ -100,11 +135,9 @@ export default function ClientesScreen() {
                   </View>
                 )
               }}
-              ListEmptyComponent={() => {
-                return (
-                  <Text style={{ textAlign: 'center', marginTop: 20 }}>Nenhum usuário cadastrado.</Text>
-                )
-              }}
+              ListEmptyComponent={() => (
+                <Text style={styles.emptyText}>Nenhum cliente encontrado.</Text>
+              )}
             />
           </View>
         )}
@@ -146,10 +179,11 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    height: 40
+    height: 45
   },
-  sendButton: {
-    padding: 6
+  actionButton: {
+    padding: 8,
+    marginLeft: 4
   },
   card: {
     backgroundColor: '#fff',
@@ -185,5 +219,10 @@ const styles = StyleSheet.create({
   obsText: {
     fontSize: 12,
     color: '#6b4b4b'
+  },
+  emptyText: {
+    textAlign: 'center', 
+    marginTop: 20, 
+    color: '#7a4b4b'
   }
 })
