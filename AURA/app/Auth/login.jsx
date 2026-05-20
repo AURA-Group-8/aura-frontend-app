@@ -196,6 +196,11 @@ export default function Login() {
                   Cadastre-se
                 </Text>
               </Text>
+              
+                <Text style={localStyles.link} onPress={() => router.push('/Auth/forgot-password')}>
+                  Esqueci a senha
+                </Text>
+              
 
               <Pressable
                 style={[styles.btnLogin, { backgroundColor: '#fff3dc' }]}
