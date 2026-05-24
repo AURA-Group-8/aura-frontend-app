@@ -50,7 +50,6 @@ export default function Finances() {
     init()
   }, [])
 
-
   async function fetchFinancesData() {
     try {
       setLoading(true)
@@ -58,7 +57,6 @@ export default function Finances() {
       const response = await axios.get(`${API_URL}/api/insights/finance/dashboard`, {
         headers: authHeadersRef.current,
       })
-
 
       const { dadosMensais, topServicos, topClientes, atendimentosDiaDaSemanaNoMes } = response.data
 
@@ -93,7 +91,7 @@ export default function Finances() {
         setWeeklyData(newWeeklyData)
       }
     } catch (err) {
-      console.error('❌ Erro ao buscar dados de finanças:', {
+      console.error('Erro ao buscar dados de finanças:', {
         status: err.response?.status,
         data: err.response?.data,
         message: err.message,
@@ -105,7 +103,6 @@ export default function Finances() {
   }
 
   const addRevenue = (amount) => {
-
     const currentAmount = parseFloat(monthlyRevenue.replace(',', '.'))
     const newAmount = (currentAmount + amount).toFixed(2).replace('.', ',')
     setMonthlyRevenue(newAmount)
@@ -135,7 +132,6 @@ export default function Finances() {
           endMonth,
         },
       })
-
 
       if (Array.isArray(response.data)) {
         const monthNames = [
@@ -169,7 +165,7 @@ export default function Finances() {
         setMonthHistory(singleHistory)
       }
     } catch (err) {
-      console.error('❌ Erro ao buscar histórico:', {
+      console.error('Erro ao buscar histórico:', {
         status: err.response?.status,
         data: err.response?.data,
         message: err.message,
@@ -202,22 +198,22 @@ export default function Finances() {
         }
       });
 
-      const mapped = response.data.items.map((item, index) => ({
+      const mapped = (response.data?.items || []).map((item, index) => ({
         id: index + 1,
         tag: item.category?.toUpperCase() || 'GERAL',
         title: item.title,
         description: item.text,
         icon: 'bulb-outline',
-        color: '#FFC107'
       }));
 
       setInsights(mapped);
       setInsightsModalOpen(true);
 
     } catch (err) {
-      console.error('Erro ao buscar insights:', err);
+      console.error('Erro ao buscar insights:', err.response?.data || err.message);
+      setInsightsModalOpen(true);
     } finally {
-      setInsightsLoading(false); // 🔥 termina loading
+      setInsightsLoading(false);
     }
   }
 
@@ -242,7 +238,7 @@ export default function Finances() {
               {insightsLoading ? (
                 <ActivityIndicator size="small" color="#FFC107" />
               ) : (
-                <Ionicons name="bulb-outline" size={24} color="#FFC107" />
+                <Ionicons name="bulb-outline" size={24} color="#ffbf00" />
               )}
             </Pressable>
             <Pressable
@@ -428,7 +424,6 @@ export default function Finances() {
       <BusinessInsightsModal
         visible={insightsModalOpen}
         onClose={() => setInsightsModalOpen(false)}
-        data={insights}
       />
       <NavbarPro active="Finanças" />
     </View>
