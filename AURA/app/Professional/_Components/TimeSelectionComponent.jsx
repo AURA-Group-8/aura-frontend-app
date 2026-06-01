@@ -46,6 +46,8 @@ export default function TimeSelectionComponent({ selectedDate, selectedJob, sele
     }, [selectedDate, selectedJob])
 
     async function loadAvailableTimes() {
+        if (authHeadersRef.current && Object.keys(authHeadersRef.current).length === 0) return
+
         const duration = selectedJob?.expectedDurationMinutes ?? 30
        
         const times = await getAvailableTimes(duration)
