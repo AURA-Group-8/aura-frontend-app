@@ -17,6 +17,10 @@ export default function Navbar() {
         <AntDesign name="clock-circle" size={28} color="#982546" />
       </Pressable>
 
+      <Pressable style={styles.navItem} onPress={() => router.replace('/Client/maps')}>
+        <Ionicons name="map-outline" size={28} color="#982546" />
+      </Pressable>
+
       <Pressable style={styles.navItem} onPress={() => router.replace('/Client/profile')}>
         <Ionicons name="person-outline" size={28} color="#982546" />
       </Pressable>

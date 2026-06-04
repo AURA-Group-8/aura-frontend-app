@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { styles } from '../../styles/styles';
 import { Text, View, Image, Pressable, TextInput, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -12,9 +12,14 @@ import {
   TouchableWithoutFeedback,
   Keyboard
 } from 'react-native';
+import { LanguageContext } from '../contexts/LanguageContext';
+import { getTranslation } from '../translations/translations';
 
 export default function SignUp() {
   const router = useRouter();
+  const { language, changeLanguage } = useContext(LanguageContext);
+  const t = (key) => getTranslation(language, 'signUp', key);
+  
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -25,6 +30,7 @@ export default function SignUp() {
   const [emailError, setEmailError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -45,17 +51,17 @@ export default function SignUp() {
     let hasError = false;
 
     if (!name.trim()) {
-      setNameError('Nome é obrigatório');
+      setNameError(t('nameRequired'));
       hasError = true;
     } else {
       setNameError('');
     }
 
     if (!email.trim()) {
-      setEmailError('Email é obrigatório');
+      setEmailError(t('emailRequired'));
       hasError = true;
     } else if (!email.includes('@') || !email.includes('.')) {
-      setEmailError('Email inválido');
+      setEmailError(t('emailInvalid'));
       hasError = true;
     } else {
       setEmailError('');
@@ -63,20 +69,20 @@ export default function SignUp() {
 
     const phoneDigits = phone.replace(/\D/g, '');
     if (!phone.trim()) {
-      setPhoneError('Telefone é obrigatório');
+      setPhoneError(t('phoneRequired'));
       hasError = true;
     } else if (phoneDigits.length < 10) {
-      setPhoneError('Telefone inválido');
+      setPhoneError(t('phoneInvalid'));
       hasError = true;
     } else {
       setPhoneError('');
     }
 
     if (!password.trim()) {
-      setPasswordError('Senha é obrigatória');
+      setPasswordError(t('passwordRequired'));
       hasError = true;
     } else if (password.length < 6) {
-      setPasswordError('Senha deve ter pelo menos 6 dígitos');
+      setPasswordError(t('passwordShort'));
       hasError = true;
     } else {
       setPasswordError('');
@@ -102,11 +108,11 @@ export default function SignUp() {
       });
 
       if (response.status === 201) {
-        setPopupMessage('Cadastro realizado com sucesso!');
+        setPopupMessage(t('signupSuccess'));
         setPopupType('success');
         setPopupVisible(true);
       } else {
-        setPopupMessage('Erro ao realizar cadastro. Tente novamente.');
+        setPopupMessage(t('signupError'));
         setPopupType('error');
         setPopupVisible(true);
         console.error('Erro ao realizar cadastro:', response.data);
@@ -137,16 +143,44 @@ export default function SignUp() {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={{ flex: 1, backgroundColor: '#281111' }}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} pointerEvents="none">
+        <View style={{ flex: 1, backgroundColor: '#281111' }} pointerEvents="auto">
 
 
           <Pressable
             onPress={() => router.replace('/Auth/login')}
             style={localStyles.backButton}
+            pointerEvents="auto"
           >
             <Ionicons name="chevron-back" size={30} color="#FFF3DC" />
           </Pressable>
+
+          <View style={localStyles.languageSelector} pointerEvents="auto" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Pressable
+              onPress={() => changeLanguage('pt')}
+              style={[
+                localStyles.languageBtnPT,
+                language === 'pt' && localStyles.languageBtnActive
+              ]}
+            >
+              <Text style={[
+                localStyles.languageText,
+                language === 'pt' && localStyles.languageTextActive
+              ]}>PT</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => changeLanguage('en')}
+              style={[
+                localStyles.languageBtnEN,
+                language === 'en' && localStyles.languageBtnActive
+              ]}
+            >
+              <Text style={[
+                localStyles.languageText,
+                language === 'en' && localStyles.languageTextActive
+              ]}>EN</Text>
+            </Pressable>
+          </View>
 
           <ScrollView
             contentContainerStyle={{
@@ -157,6 +191,7 @@ export default function SignUp() {
               marginTop: keyboardVisible ? 100 : 0
             }}
             keyboardShouldPersistTaps="handled"
+            pointerEvents="auto"
           >
 
             {!keyboardVisible && (
@@ -167,10 +202,10 @@ export default function SignUp() {
             )}
 
             <View style={{ width: '100%', alignItems: 'center' }}>
-              <Text style={styles.titulo}>Criar Conta</Text>
+              <Text style={styles.titulo}>{t('title')}</Text>
 
               <TextInput
-                placeholder="Nome Completo"
+                placeholder={t('name')}
                 placeholderTextColor="#FFF3DC80"
                 value={name}
                 onChangeText={setName}
@@ -179,7 +214,7 @@ export default function SignUp() {
               {nameError ? <Text style={localStyles.error}>{nameError}</Text> : null}
 
               <TextInput
-                placeholder="Email"
+                placeholder={t('email')}
                 placeholderTextColor="#FFF3DC80"
                 value={email}
                 onChangeText={setEmail}
@@ -189,7 +224,7 @@ export default function SignUp() {
               {emailError ? <Text style={localStyles.error}>{emailError}</Text> : null}
 
               <TextInput
-                placeholder="Telefone"
+                placeholder={t('phone')}
                 placeholderTextColor="#FFF3DC80"
                 value={phone}
                 onChangeText={(text) => setPhone(formatPhone(text))}
@@ -199,23 +234,35 @@ export default function SignUp() {
               />
               {phoneError ? <Text style={localStyles.error}>{phoneError}</Text> : null}
 
-              <TextInput
-                placeholder="Senha"
-                placeholderTextColor="#FFF3DC80"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                style={localStyles.input}
-              />
+              <View style={localStyles.inputContainer}>
+                <TextInput
+                  placeholder={t('password')}
+                  placeholderTextColor="#FFF3DC80"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!passwordVisible}
+                  style={localStyles.input}
+                />
+                <Pressable
+                  onPress={() => setPasswordVisible(!passwordVisible)}
+                  style={localStyles.eyeIcon}
+                >
+                  <Ionicons
+                    name={passwordVisible ? 'eye' : 'eye-off'}
+                    size={24}
+                    color="#FFF3DC"
+                  />
+                </Pressable>
+              </View>
               {passwordError ? <Text style={localStyles.error}>{passwordError}</Text> : null}
 
               <Text style={localStyles.Textlink}>
-                Já tem uma conta?{' '}
+                {t('haveAccount')}{' '}
                 <Text
                   style={localStyles.link}
                   onPress={() => router.replace('/Auth/login')}
                 >
-                  Faça login
+                  {t('login')}
                 </Text>
               </Text>
 
@@ -227,7 +274,7 @@ export default function SignUp() {
                 onPress={SignUp}
               >
                 <Text style={[styles.btnLoginText, { color: '#281111' }]}>
-                  CADASTRAR
+                  {t('createButton')}
                 </Text>
               </Pressable>
             </View>
@@ -266,6 +313,45 @@ const localStyles = StyleSheet.create({
     zIndex: 10,
     padding: 10,
   },
+  languageSelector: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 100,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  languageBtnPT: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#FFF3DC',
+    backgroundColor: 'transparent',
+  },
+  languageBtnEN: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#FFF3DC',
+    backgroundColor: 'transparent',
+  },
+  languageBtnActive: {
+    backgroundColor: '#FFF3DC',
+  },
+  languageText: {
+    color: '#FFF3DC',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  languageTextActive: {
+    color: '#281111',
+  },
+  inputContainer: {
+    position: 'relative',
+    width: 300,
+  },
   input: {
     backgroundColor: '#fff3dc1a',
     color: '#FFF3DC',
@@ -273,9 +359,15 @@ const localStyles = StyleSheet.create({
     borderColor: '#FFF3DC',
     width: 300,
     padding: 12,
+    paddingRight: 45,
     borderRadius: 20,
     marginBottom: 20,
     fontWeight: '500',
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
   },
   error: {
     color: '#fa8585',

@@ -17,6 +17,7 @@ export const styles = StyleSheet.create({
   img: {
     width: 300,
     height: 300,
+    
   },
 
   titulo: {

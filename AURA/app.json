@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/AURA.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/AURA.png",
       "resizeMode": "contain",
@@ -16,13 +16,21 @@
       "supportsTablet": true
     },
     "android": {
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/AURA.png",
-        "backgroundColor": "#ffffff",
-        "softwareKeyboardLayoutMode": "resize"
-    
+        "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET"
+      ],
+      "package": "com.anonymous.agendamentoapp"
     },
     "web": {
       "favicon": "./assets/AURA.png"
