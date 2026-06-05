@@ -36,7 +36,6 @@ export default function Profile() {
         setLoading(true)
         setError(null)
 
-        // Buscar token e userId do AsyncStorage
         const token = await AsyncStorage.getItem('token')
         const userId = await AsyncStorage.getItem('userId')
 
@@ -47,7 +46,6 @@ export default function Profile() {
 
         authHeadersRef.current = { Authorization: `Bearer ${token}` }
 
-        // Fazer requisição para buscar dados do usuário
         const response = await axios.get(`${API_URL}/api/usuarios/${userId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -56,7 +54,6 @@ export default function Profile() {
 
         setUserData(response.data)
         
-        // Preencher formData com os dados recebidos
         setFormData({
           username: response.data.username || '',
           email: response.data.email || '',
@@ -74,18 +71,14 @@ export default function Profile() {
     fetchUserData()
   }, [])
 
-  // Função para formatar telefone
   const formatPhone = (text) => {
-    // Remove todos os caracteres não numéricos
     const cleaned = text.replace(/\D/g, '')
     
-    // Aplica a máscara (XX) XXXXX-XXXX
     const match = cleaned.match(/^(\d{2})(\d{5})(\d{4})$/)
     if (match) {
       return `(${match[1]}) ${match[2]}-${match[3]}`
     }
     
-    // Para números parciais
     if (cleaned.length <= 2) {
       return cleaned
     } else if (cleaned.length <= 7) {
@@ -95,18 +88,19 @@ export default function Profile() {
     }
   }
 
-  // Função para fazer signout
   const handleSignOut = async () => {
     try {
-      // Limpar dados do AsyncStorage
-      await AsyncStorage.removeItem('token')
-      await AsyncStorage.removeItem('userId')
+      await AsyncStorage.multiRemove([
+        'token',
+        'userId',
+        'userName',
+        'userRole',
+        'appLanguage',
+      ])
       
-      // Redirecionar para login
       router.replace('/Auth/login')
     } catch (error) {
       console.error('Erro ao fazer signout:', error)
-      // Mesmo com erro, tentar redirecionar
       router.replace('/Auth/login')
     }
   }
@@ -148,7 +142,6 @@ export default function Profile() {
     }
   }
 
-  // Função para atualizar dados do usuário
   const updateUserData = async () => {
     try {
       setUpdating(true)
@@ -163,7 +156,6 @@ export default function Profile() {
         return
       }
 
-      // Preparar dados para envio (remover formatação do telefone)
       const updateData = {
         id: parseInt(userId),
         username: formData.username,
@@ -179,7 +171,6 @@ export default function Profile() {
         }
       })
 
-      // Atualizar dados locais
       setUserData(prev => ({
         ...prev,
         username: formData.username,

@@ -26,22 +26,44 @@ export default function Services() {
   const [isSaving, setIsSaving] = useState(false)
 
   const authHeadersRef = useRef({})
-  const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
+  const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
+  const [ready, setReady] = useState(false)
 
   const router = useRouter()
 
   useEffect(() => {
-    if (Platform.OS === 'android') {
-      NavigationBar.setVisibilityAsync("hidden")
-      NavigationBar.setBehaviorAsync("overlay-swipe")
-    }
     const init = async () => {
       const token = await AsyncStorage.getItem('token')
       authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
-      fetchServices()
+      setReady(true)
     }
+
     init()
   }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
+    const setup = async () => {
+      if (!ready || !isMounted) return
+
+      if (Platform.OS === 'android') {
+        try {
+          await NavigationBar.setVisibilityAsync('hidden')
+        } catch (e) {
+          console.log('NavBar error ignored:', e)
+        }
+      }
+
+      fetchServices()
+    }
+
+    setup()
+
+    return () => {
+      isMounted = false
+    }
+  }, [ready])
 
   async function fetchServices() {
     try {
@@ -589,7 +611,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',

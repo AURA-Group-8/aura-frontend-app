@@ -13,15 +13,15 @@ import {
   Platform,
   TouchableWithoutFeedback
 } from 'react-native';
-import { LanguageContext } from '../contexts/LanguageContext';
-import { getTranslation } from '../translations/translations';
+import { LanguageContext } from '../../contexts/LanguageContext';
+import { getTranslation } from '../../translations/translations';
 
 export default function Login() {
   let token = null;
   const router = useRouter();
   const { language, changeLanguage } = useContext(LanguageContext);
   const t = (key) => getTranslation(language, 'login', key);
-  
+
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [buttonHovered, setButtonHovered] = useState(false);
@@ -148,7 +148,7 @@ export default function Login() {
         style={{ flex: 1 }}
       >
         <View style={{ flex: 1 }}>
-          <Pressable onPress={() => router.push('/')} style={localStyles.backButton} pointerEvents="auto">
+          <Pressable onPress={() => router.replace('/')} style={localStyles.backButton} pointerEvents="auto">
             <Ionicons name="chevron-back" size={30} color="#FFF3DC" />
           </Pressable>
 
@@ -178,90 +178,86 @@ export default function Login() {
               ]}>EN</Text>
             </Pressable>
           </View>
+          <ScrollView
+            contentContainerStyle={{
+              flexGrow: 1,
+              justifyContent: keyboardVisible ? 'flex-start' : 'center',
+              alignItems: 'center',
+              paddingVertical: 60,
+              marginTop: keyboardVisible ? 100 : 0
+            }}
+            keyboardShouldPersistTaps="handled"
+          >
 
-          <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }} pointerEvents="none">
-            <ScrollView
-              contentContainerStyle={{
-                flexGrow: 1,
-                justifyContent: keyboardVisible ? 'flex-start' : 'center',
-                alignItems: 'center',
-                paddingVertical: 60,
-                marginTop: keyboardVisible ? 100 : 0
-              }}
-              keyboardShouldPersistTaps="handled"
-              pointerEvents="auto"
-            >
-              
-              {!keyboardVisible && (
-                <Image
-                  source={require('../../assets/AURA.png')}
-                  style={{
-                    width: 250,
-                    height: 250,
-                    marginBottom: 20
-                  }}
-                />
-              )}
+            {!keyboardVisible && (
+              <Image
+                source={require('../../assets/AURA.png')}
+                style={{
+                  width: 250,
+                  height: 250,
+                  marginBottom: 20
+                }}
+              />
+            )}
 
-              <View style={{ width: '100%', alignItems: 'center' }}>
-                <Text style={styles.titulo}>{t('title')}</Text>
+            <View style={{ width: '100%', alignItems: 'center' }}>
+              <Text style={styles.titulo}>{t('title')}</Text>
 
+              <TextInput
+                placeholder={t('email')}
+                placeholderTextColor="#FFF3DC80"
+                value={email}
+                onChangeText={setEmail}
+                style={localStyles.input}
+              />
+              {emailError ? <Text style={localStyles.error}>{emailError}</Text> : null}
+
+              <View style={localStyles.inputContainer}>
                 <TextInput
-                  placeholder={t('email')}
+                  placeholder={t('password')}
                   placeholderTextColor="#FFF3DC80"
-                  value={email}
-                  onChangeText={setEmail}
+                  value={senha}
+                  onChangeText={setSenha}
+                  secureTextEntry={!senhaVisible}
                   style={localStyles.input}
                 />
-                {emailError ? <Text style={localStyles.error}>{emailError}</Text> : null}
-
-                <View style={localStyles.inputContainer}>
-                  <TextInput
-                    placeholder={t('password')}
-                    placeholderTextColor="#FFF3DC80"
-                    value={senha}
-                    onChangeText={setSenha}
-                    secureTextEntry={!senhaVisible}
-                    style={localStyles.input}
-                  />
-                  <Pressable
-                    onPress={() => setSenhaVisible(!senhaVisible)}
-                    style={localStyles.eyeIcon}
-                  >
-                    <Ionicons
-                      name={senhaVisible ? 'eye' : 'eye-off'}
-                      size={24}
-                      color="#FFF3DC"
-                    />
-                  </Pressable>
-                </View>
-                {senhaError ? <Text style={localStyles.error}>{senhaError}</Text> : null}
-
-                <Text style={localStyles.Textlink}>
-                  {t('noAccount')}{' '}
-                  <Text style={localStyles.link} onPress={() => router.push('/Auth/signUp')}>
-                    {t('signUp')}
-                  </Text>
-                </Text>
-
                 <Pressable
-                  style={[styles.btnLogin, { backgroundColor: '#fff3dc' }]}
-                  onPress={handleLogin}
+                  onPress={() => setSenhaVisible(!senhaVisible)}
+                  style={localStyles.eyeIcon}
                 >
-                  <Text style={[styles.btnLoginText, { color: '#5c0f25' }]}>
-                    {t('enterButton')}
-                  </Text>
+                  <Ionicons
+                    name={senhaVisible ? 'eye' : 'eye-off'}
+                    size={24}
+                    color="#FFF3DC"
+                  />
                 </Pressable>
-
-                <CardPopUp
-                  visible={popupVisible}
-                  message={popupMessage}
-                  type={popupType}
-                  onClose={() => setPopupVisible(false)}
-                />
               </View>
-            </ScrollView>
-          </Pressable>
+              {senhaError ? <Text style={localStyles.error}>{senhaError}</Text> : null}
+
+              <Text style={localStyles.Textlink}>
+                {t('noAccount')}{' '}
+                <Text style={localStyles.link} onPress={() => router.replace('/Auth/signUp')}>
+                  {t('signUp')}
+                </Text>
+              </Text>
+
+              <Pressable
+                style={[styles.btnLogin, { backgroundColor: '#fff3dc' }]}
+                onPress={handleLogin}
+              >
+                <Text style={[styles.btnLoginText, { color: '#5c0f25' }]}>
+                  {t('enterButton')}
+                </Text>
+              </Pressable>
+
+              <CardPopUp
+                visible={popupVisible}
+                message={popupMessage}
+                type={popupType}
+                onClose={() => setPopupVisible(false)}
+              />
+            </View>
+          </ScrollView>
         </View>
       </LinearGradient>
     </KeyboardAvoidingView>
@@ -283,7 +279,7 @@ const localStyles = StyleSheet.create({
   },
   languageSelector: {
     position: 'absolute',
-    top: 20,
+    top: 40,
     right: 20,
     zIndex: 100,
     flexDirection: 'row',

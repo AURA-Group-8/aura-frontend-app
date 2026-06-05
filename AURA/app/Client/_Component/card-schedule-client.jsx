@@ -1,19 +1,20 @@
 import { useState } from 'react'
-import { View, Text, StyleSheet, Pressable, Modal, TextInput, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, Pressable, Modal, TextInput, TouchableOpacity, ScrollView } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 
 export default function CardSchedule({ 
   schedule,
   onCancelSchedule,
   onUpdateSchedule,
-  onRefresh
+  onRefresh,
+  isClient = true
 }) {
   const [cancelModalOpen, setCancelModalOpen] = useState(false)
   const [cancellationReason, setCancellationReason] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const canShowActions = !['FEITO', 'CANCELADO'].includes(
+  const canShowActions = !isClient && !['FEITO', 'CANCELADO'].includes(
     String(schedule.status).trim().toUpperCase()
   )
 
@@ -75,18 +76,46 @@ export default function CardSchedule({
     minute: '2-digit',
   }) : null
   const totalPrice = current.totalPrice != null ? `R$ ${Number(current.totalPrice).toFixed(2).replace('.', ',')}` : current.valor || 'R$ 0,00'
+  
+  const calculateDuration = () => {
+    if (!current.startDatetime || !current.endDatetime) return null
+    const start = new Date(current.startDatetime)
+    const end = new Date(current.endDatetime)
+    const diffMs = end - start
+    const diffMins = Math.round(diffMs / 60000)
+    const hours = Math.floor(diffMins / 60)
+    const mins = diffMins % 60
+    return mins > 0 ? `${hours}h ${String(mins).padStart(2, '0')}m` : `${hours}h`
+  }
+  
+  const duration = calculateDuration()
 
   return (
     <View style={styles.card}>
       <View style={styles.topRow}>
-        <View>
-          <Text style={styles.name}>{current.userName ?? 'Cliente'}</Text>
-          <Text style={styles.servico}>{current.jobsNames?.length > 0 ? current.jobsNames.join(', ') : 'Agendamento'}</Text>
-        </View>
+        <Text style={styles.name}>{current.userName ?? 'Cliente'}</Text>
         <View style={[styles.statusBadge, current.status === 'FEITO' ? styles.statusConfirmed : styles.statusPending]}>
           <Text style={styles.statusText}>{current.status}</Text>
         </View>
       </View>
+
+      {current.jobsNames && current.jobsNames.length > 0 && (
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.jobsScroll}
+        >
+          {Array.isArray(current.jobsNames) ? (
+            current.jobsNames.map((job, index) => (
+              <Text key={`job-${index}`} style={styles.servicoBadge}>
+                {job}
+              </Text>
+            ))
+          ) : (
+            <Text style={styles.servicoBadge}>{current.jobsNames}</Text>
+          )}
+        </ScrollView>
+      )}
 
       <View style={styles.detailsRow}>
         <View>
@@ -113,6 +142,15 @@ export default function CardSchedule({
           </Text>
         </View>
       </View>
+
+      {duration && (
+        <View style={styles.detailsRow}>
+          <View>
+            <Text style={styles.label}>Duração Total</Text>
+            <Text style={styles.detail}>{duration}</Text>
+          </View>
+        </View>
+      )}
       {canShowActions && (
           <View style={styles.actionsRow}>
             <Pressable
@@ -218,15 +256,33 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 14,
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
   },
 
   name: {
     fontSize: 16,
     fontWeight: '700',
     color: '#281111',
+  },
+
+  jobsScroll: {
+    maxHeight: 32,
+    marginBottom: 14,
+  },
+
+  servicoBadge: {
+    fontSize: 12,
+    color: '#fff',
+    backgroundColor: '#7a1f40',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    marginRight: 6,
     marginBottom: 4,
+    overflow: 'hidden',
+    minWidth: 60,
   },
 
   servico: {
@@ -238,7 +294,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 999,
-    alignSelf: 'flex-start',
+    justifyContent: 'center',
   },
 
   statusConfirmed: {
@@ -253,6 +309,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#281111',
+    textAlign: 'center',
   },
 
   detailsRow: {

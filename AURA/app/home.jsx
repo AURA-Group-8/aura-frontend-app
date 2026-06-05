@@ -3,8 +3,8 @@ import { Text, View, Image, Pressable, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState, useContext } from 'react';
-import { LanguageContext } from './contexts/LanguageContext';
-import { getTranslation } from './translations/translations';
+import { LanguageContext } from '../contexts/LanguageContext';
+import { getTranslation } from '../translations/translations';
 
 export default function Home() {
     
@@ -83,7 +83,7 @@ export default function Home() {
 const homeStyles = StyleSheet.create({
   languageSelector: {
     position: 'absolute',
-    top: 20,
+    top: 40,
     right: 20,
     zIndex: 100,
     flexDirection: 'row',

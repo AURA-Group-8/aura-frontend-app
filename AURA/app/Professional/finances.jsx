@@ -34,21 +34,34 @@ export default function Finances() {
   const authHeadersRef = useRef(null)
 
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
-  const ETL_URL = process.env.EXPO_PUBLIC_API_ETL_URL || 'http://localhost:8000'
+  const ETL_URL = process.env.EXPO_PUBLIC_API_ETL_URL || 'http://localhost:8000';
+  const [ready, setReady] = useState(false)
+
   const router = useRouter()
 
   useEffect(() => {
-    if (Platform.OS === 'android') {
-      NavigationBar.setVisibilityAsync('hidden')
-      NavigationBar.setBehaviorAsync('overlay-swipe')
-    }
-    const init = async () => {
-      const token = await AsyncStorage.getItem('token')
-      authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
-      fetchFinancesData()
-    }
-    init()
-  }, [])
+        let isMounted = true
+    
+        const setup = async () => {
+          if (!ready || !isMounted) return
+    
+          if (Platform.OS === 'android') {
+            try {
+              await NavigationBar.setVisibilityAsync('hidden')
+            } catch (e) {
+              console.log('NavBar error ignored:', e)
+            }
+          }
+    
+          getSchedules()
+        }
+    
+        setup()
+    
+        return () => {
+          isMounted = false
+        }
+      }, [])
 
 
   async function fetchFinancesData() {

@@ -12,8 +12,8 @@ import {
   TouchableWithoutFeedback,
   Keyboard
 } from 'react-native';
-import { LanguageContext } from '../contexts/LanguageContext';
-import { getTranslation } from '../translations/translations';
+import { LanguageContext } from '../../contexts/LanguageContext';
+import { getTranslation } from '../../translations/translations';
 
 export default function SignUp() {
   const router = useRouter();

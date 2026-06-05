@@ -58,7 +58,13 @@ export default function MaisScreen() {
                     text: "Sair", 
                     style: "destructive",
                     onPress: async () => {
-                        await AsyncStorage.clear()
+                        await AsyncStorage.multiRemove([
+                            'token',
+                            'userId',
+                            'userName',
+                            'userRole',
+                            'appLanguage',
+                        ])
                         router.replace('/')
                     }
                 }
@@ -120,7 +126,6 @@ export default function MaisScreen() {
     )
 }
 
-// O ERRO ESTAVA AQUI: Certifique-se de que este bloco existe no final do arquivo!
 const styles = StyleSheet.create({
     container: {
         flex: 1,

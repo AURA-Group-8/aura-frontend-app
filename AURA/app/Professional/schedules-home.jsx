@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import * as NavigationBar from 'expo-navigation-bar';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Platform } from 'react-native';
 import axios from 'axios';
@@ -17,22 +17,51 @@ export default function Schedules() {
   const [totalItems, setTotalItems] = useState(0);
   const [sortBy, setSortBy] = useState('id');
   const [direction, setDirection] = useState('ASC');
-  const [filterType, setFilterType] = useState('todos') 
+  const [filterType, setFilterType] = useState('todos')
   const authHeadersRef = useRef({})
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    if (Platform.OS === 'android') {
-      NavigationBar.setVisibilityAsync("hidden");
-      NavigationBar.setBehaviorAsync("overlay-swipe");
-    }
     const init = async () => {
       const token = await AsyncStorage.getItem('token')
       authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
-      getSchedules();
+      setReady(true)
     }
-    init();
-  }, [page, size, sortBy, direction]);
+
+    init()
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
+    const setup = async () => {
+      if (!ready || !isMounted) return
+
+      if (Platform.OS === 'android') {
+        try {
+          await NavigationBar.setVisibilityAsync('hidden')
+        } catch (e) {
+          console.log('NavBar error ignored:', e)
+        }
+      }
+    }
+
+    setup()
+
+    return () => {
+      isMounted = false
+    }
+  }, [ready])
+
+  useFocusEffect(
+    useCallback(() => {
+      if (ready) {
+        console.log('🔄 Tela em foco - refrescando agendamentos')
+        getSchedules()
+      }
+    }, [ready])
+  )
 
   const router = useRouter();
 
@@ -57,6 +86,11 @@ export default function Schedules() {
         payload.paymentStatus = updatedFields.paymentStatus.toUpperCase()
       }
 
+      console.log('📤 Enviando PATCH:', {
+        url: `${API_URL}/api/agendamentos/${scheduleId}`,
+        payload,
+        headers: authHeadersRef.current,
+      })
 
       const response = await axios.patch(
         `${API_URL}/api/agendamentos/${scheduleId}`,
@@ -69,16 +103,16 @@ export default function Schedules() {
         }
       )
 
-      console.log(`✅ Agendamento atualizado com sucesso`)
+      console.log('✅ Resposta do servidor:', response.data)
 
       setAgendamentos((prev) =>
         prev.map((schedule) =>
           schedule.id === scheduleId
             ? {
-                ...schedule,
-                status: updatedFields.status?.toUpperCase() || schedule.status,
-                paymentStatus: updatedFields.paymentStatus?.toUpperCase() || schedule.paymentStatus,
-              }
+              ...schedule,
+              status: response.data.status || schedule.status,
+              paymentStatus: response.data.paymentStatus || schedule.paymentStatus,
+            }
             : schedule
         )
       )
@@ -97,11 +131,11 @@ export default function Schedules() {
 
   async function cancelSchedule(scheduleId, mensagem) {
     try {
-      
+
       if (!scheduleId) {
         throw new Error('ID do agendamento não informado')
       }
-      
+
       if (!mensagem || mensagem.trim() === '') {
         throw new Error('Motivo do cancelamento é obrigatório')
       }
@@ -109,14 +143,14 @@ export default function Schedules() {
       if (!authHeadersRef.current || Object.keys(authHeadersRef.current).length === 0) {
         throw new Error('Token de autenticação não encontrado')
       }
-      
+
       const response = await axios.delete(`${API_URL}/api/agendamentos/${scheduleId}`, {
         headers: authHeadersRef.current,
         params: {
           message: mensagem.trim(),
         },
       })
-      
+
       console.log('✅ Agendamento deletado com sucesso')
 
       setAgendamentos((prev) =>
@@ -137,7 +171,7 @@ export default function Schedules() {
 
   async function getSchedules() {
     try {
-     
+
       const response = await axios.get(`${API_URL}/api/agendamentos/card`, {
         headers: authHeadersRef.current,
         params: {
@@ -170,18 +204,18 @@ export default function Schedules() {
       const sortedSchedules = formattedSchedules.sort((a, b) => {
         const aIsPending = a.status === 'PENDENTE'
         const bIsPending = b.status === 'PENDENTE'
-        
+
         if (aIsPending !== bIsPending) {
           return aIsPending ? -1 : 1
         }
 
         const aDate = new Date(a.startDatetime || 0)
         const bDate = new Date(b.startDatetime || 0)
-        
+
         return aDate - bDate
       })
 
-    
+
       setAgendamentos(sortedSchedules);
       setTotalPages(responseData.totalPages ?? 1);
       setTotalItems(responseData.totalElements ?? content.length);
@@ -202,8 +236,12 @@ export default function Schedules() {
   }
 
   const getFilteredSchedules = () => {
+    const activeSchedules = agendamentos.filter(sch => 
+      !['FEITO', 'CANCELADO'].includes(String(sch.status).trim().toUpperCase())
+    )
+
     if (filterType === 'todos') {
-      return agendamentos
+      return activeSchedules
     }
 
     const today = new Date()
@@ -221,7 +259,7 @@ export default function Schedules() {
     endOfMonth.setDate(0)
     endOfMonth.setHours(23, 59, 59, 999)
 
-    return agendamentos.filter((sch) => {
+    return activeSchedules.filter((sch) => {
       const schedDate = new Date(sch.startDatetime || 0)
 
       if (filterType === 'hoje') {
@@ -330,8 +368,8 @@ export default function Schedules() {
 
         {getFilteredSchedules().length > 0 ? (
           getFilteredSchedules().map((item) => (
-            <CardSchedule 
-              key={item.id} 
+            <CardSchedule
+              key={item.id}
               schedule={item}
               showActions={
                 !['FEITO', 'CANCELADO'].includes(

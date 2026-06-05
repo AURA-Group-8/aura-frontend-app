@@ -405,7 +405,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 12,
     paddingHorizontal: 16,
-    paddingTop: 48,
     zIndex: 10,
   },
   backButton: {

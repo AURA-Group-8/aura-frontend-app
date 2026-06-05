@@ -1,7 +1,6 @@
 import { View, Pressable, Text, StyleSheet } from 'react-native'
 import { useRouter } from 'expo-router'
-import Ionicons from '@expo/vector-icons/Ionicons'
-import AntDesign from '@expo/vector-icons/AntDesign'
+import { Ionicons, AntDesign } from '@expo/vector-icons'
 
 export default function Navbar() {
 

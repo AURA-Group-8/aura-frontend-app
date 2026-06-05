@@ -17,24 +17,48 @@ export default function HistoryClient() {
   const [totalItems, setTotalItems] = useState(0);
   const [sortBy, setSortBy] = useState('id');
   const [direction, setDirection] = useState('DESC');
-  const [userIdRef, setUserIdRef] = useState(null);
+  const userNameRef = useRef(null)
   const authHeadersRef = useRef({})
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    if (Platform.OS === 'android') {
-      NavigationBar.setVisibilityAsync("hidden");
-      NavigationBar.setBehaviorAsync("overlay-swipe");
-    }
-    const init = async () => {
+    const initializeAuth = async () => {
       const token = await AsyncStorage.getItem('token')
-      const userId = await AsyncStorage.getItem('userId')
+      const userName = await AsyncStorage.getItem('userName')
+      
+      userNameRef.current = userName
       authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
-      setUserIdRef(userId)
-      getSchedules();
+      
+      setReady(true)
     }
-    init();
-  }, [page, size, sortBy, direction]);
+    
+    initializeAuth()
+  }, [])
+
+  useEffect(() => {
+      let isMounted = true
+  
+      const setup = async () => {
+        if (!ready || !isMounted) return
+  
+        if (Platform.OS === 'android') {
+          try {
+            await NavigationBar.setVisibilityAsync('hidden')
+          } catch (e) {
+            console.log('NavBar error ignored:', e)
+          }
+        }
+  
+        getSchedules()
+      }
+  
+      setup()
+  
+      return () => {
+        isMounted = false
+      }
+    }, [ready, page, size, sortBy, direction])
 
   const router = useRouter();
 
@@ -59,7 +83,6 @@ export default function HistoryClient() {
 
       const formattedSchedules = content.map((agendamento) => ({
         id: agendamento.idScheduling,
-        idClient: agendamento.idClient,
         userName: agendamento.userName,
         jobsNames: agendamento.jobsNames,
         startDatetime: agendamento.startDatetime,
@@ -70,20 +93,16 @@ export default function HistoryClient() {
         feedback: agendamento.feedback,
       }));
 
-      // Filtrar apenas agendamentos do usuário atual
       const userSchedules = formattedSchedules.filter((agendamento) => {
-        return String(agendamento.idClient) === String(userIdRef);
+        return String(agendamento.userName).toLowerCase() === String(userNameRef.current).toLowerCase();
       });
 
-      // Filtrar apenas agendamentos com data no passado
-      const now = new Date();
-      const pastSchedules = userSchedules.filter((agendamento) => {
-        const endDate = new Date(agendamento.endDatetime || 0);
-        return endDate < now;
+      const completedSchedules = userSchedules.filter((agendamento) => {
+        const status = String(agendamento.status).trim().toUpperCase();
+        return status === 'FEITO' || status === 'CANCELADO';
       });
 
-      // Ordenar por data decrescente (mais recentes primeiro)
-      const sortedSchedules = pastSchedules.sort((a, b) => {
+      const sortedSchedules = completedSchedules.sort((a, b) => {
         const aDate = new Date(a.endDatetime || 0);
         const bDate = new Date(b.endDatetime || 0);
         return bDate - aDate;
@@ -91,7 +110,7 @@ export default function HistoryClient() {
 
       setAgendamentos(sortedSchedules);
       setTotalPages(responseData.totalPages ?? 1);
-      setTotalItems(responseData.totalElements ?? content.length);
+      setTotalItems(completedSchedules.length);
       setPage(responseData.page ?? responseData.pageNumber ?? page);
       setSize(responseData.size ?? responseData.pageSize ?? size);
     }
@@ -128,12 +147,12 @@ export default function HistoryClient() {
             <CardSchedule 
               key={item.id} 
               schedule={item}
-              showActions={false}
+              isClient={true}
             />
           ))
         ) : (
           <View style={styles.emptyCard}>
-            <Ionicons name="history-outline" size={48} color="#982546" />
+            <Ionicons name="time-outline" size={48} color="#982546" />
             <Text style={styles.emptyText}>Nenhum agendamento no histórico</Text>
           </View>
         )}
