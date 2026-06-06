@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Pressable, Modal, ActivityIndicator } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import * as NavigationBar from 'expo-navigation-bar'
 import { useEffect, useState, useCallback, useRef } from 'react'
@@ -7,11 +7,15 @@ import { Platform } from 'react-native'
 import axios from 'axios'
 import NavbarPro from './_Components/NavbarPro'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import BusinessInsightsModal from './_Components/BusinessInsightsModal';
 
 export default function Finances() {
-  const [monthlyRevenue, setMonthlyRevenue] = useState('0')
+  const [monthlyRevenue, setMonthlyRevenue] = useState('85k')
   const [cancellations, setCancellations] = useState(0)
+  const [costs, setCosts] = useState('12k')
+  const [revenueVariation, setRevenueVariation] = useState(12)
+  const [costsVariation, setCostsVariation] = useState(2)
+  const [tkmValue, setTkmValue] = useState('450')
+  const [tkmVariation, setTkmVariation] = useState(5)
   const [weeklyData, setWeeklyData] = useState([
     { day: 'Seg', value: 0 },
     { day: 'Ter', value: 0 },
@@ -20,218 +24,236 @@ export default function Finances() {
     { day: 'Sex', value: 0 },
     { day: 'Sáb', value: 0 },
   ])
-  const [historyModalOpen, setHistoryModalOpen] = useState(false)
   const [monthHistory, setMonthHistory] = useState([])
-  const [topServices, setTopServices] = useState([])
-  const [regularClients, setRegularClients] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [historyLoading, setHistoryLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [insights, setInsights] = useState([]);
-  const [insightsModalOpen, setInsightsModalOpen] = useState(false);
-  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [topServices, setTopServices] = useState([
+    { name: 'Botox', count: '45 atend.' },
+    { name: 'Preenchimento', count: '32 atend.' },
+    { name: 'Limpeza de Pele', count: '28 atend.' },
+  ])
+  const [inactiveClients, setInactiveClients] = useState([
+    { name: 'Mariana Silva', date: 'jan/2024', badge: 'ALERTA' },
+    { name: 'Carlos Oliveira', date: '3M', badge: 'INFO' },
+  ])
+  const [insights, setInsights] = useState([
+    { text: 'Pico na Quarta. Otimize a escala de recepção.' },
+    { text: 'Botox Lucrativo: Focar em campanhas deste serviço.' },
+    { text: '15 Inativos: Sugerida ação de reengajamento imediata.' },
+  ])
+  const [loading, setLoading] = useState(false)
+  const [historyModalOpen, setHistoryModalOpen] = useState(false)
+  const [insightsModalOpen, setInsightsModalOpen] = useState(false)
+  const [faturamentoPeriodo, setFaturamentoPeriodo] = useState(6)
+  const [faturamentoData, setFaturamentoData] = useState([])
+  const [agendamentosSemanais, setAgendamentosSemanais] = useState({
+    domingo: 0,
+    segunda: 0,
+    terca: 0,
+    quarta: 0,
+    quinta: 0,
+    sexta: 0,
+    sabado: 0,
+  })
+  const [topServiciosPeriodo, setTopServiciosPeriodo] = useState(6)
+  const [topServiciosData, setTopServiciosData] = useState([])
+  const [topServiciosModalOpen, setTopServiciosModalOpen] = useState(false)
+  const [inactiveClientsData, setInactiveClientsData] = useState([])
+  const [agendamentosInfoOpen, setAgendamentosInfoOpen] = useState(false)
+  const [tkmInfoOpen, setTkmInfoOpen] = useState(false)
+  const [receitaInfoOpen, setReceitaInfoOpen] = useState(false)
+  const [custosInfoOpen, setCustosInfoOpen] = useState(false)
+  const [kpisInfoOpen, setKpisInfoOpen] = useState(false)
+  const [topServiciosInfoOpen, setTopServiciosInfoOpen] = useState(false)
+  const [inactivosInfoOpen, setInactivosInfoOpen] = useState(false)
 
   const authHeadersRef = useRef(null)
-
-  const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
-  const ETL_URL = process.env.EXPO_PUBLIC_API_ETL_URL || 'http://localhost:8000';
+  const API_URL = process.env.EXPO_PUBLIC_API_ETL_URL || 'http://localhost:8000'
   const [ready, setReady] = useState(false)
-
   const router = useRouter()
 
-  useEffect(() => {
-        let isMounted = true
-    
-        const setup = async () => {
-          if (!ready || !isMounted) return
-    
-          if (Platform.OS === 'android') {
-            try {
-              await NavigationBar.setVisibilityAsync('hidden')
-            } catch (e) {
-              console.log('NavBar error ignored:', e)
-            }
-          }
-    
-          getSchedules()
-        }
-    
-        setup()
-    
-        return () => {
-          isMounted = false
-        }
-      }, [])
-
-
-  async function fetchFinancesData() {
+  async function fetchResumoData() {
     try {
-      setLoading(true)
-      setError('')
-      const response = await axios.get(`${API_URL}/api/insights/finance/dashboard`, {
+      const response = await axios.get(`${API_URL}/api/v1/resumo`, {
         headers: authHeadersRef.current,
       })
 
+      const data = response.data
 
-      const { dadosMensais, topServicos, topClientes, atendimentosDiaDaSemanaNoMes } = response.data
-
-      if (dadosMensais) {
-        const billedAmount = (dadosMensais.totalBilledInMonth || 0).toFixed(2).replace('.', ',')
-        setMonthlyRevenue(billedAmount)
-        setCancellations(dadosMensais.totalCanceledSchedulesInMonth || 0)
+      if (data.tkm !== undefined) {
+        setTkmValue(Math.round(data.tkm).toString())
+      }
+      if (data.percentagem_crescimento_tkm !== undefined) {
+        setTkmVariation(data.percentagem_crescimento_tkm)
       }
 
-      if (topServicos && Array.isArray(topServicos)) {
-        const servicesWithId = topServicos.map((name, index) => ({
-          id: index + 1,
-          name: name || 'Serviço sem nome',
-        }))
-        setTopServices(servicesWithId)
+      if (data.receita !== undefined) {
+        const receita = data.receita
+        if (receita >= 1000) {
+          setMonthlyRevenue(`${(receita / 1000).toFixed(0)}k`)
+        } else {
+          setMonthlyRevenue(receita.toFixed(2))
+        }
+      }
+      if (data.percentagem_crescimento_receita !== undefined) {
+        setRevenueVariation(data.percentagem_crescimento_receita)
       }
 
-      if (topClientes && Array.isArray(topClientes)) {
-        const clientsWithId = topClientes.map((name, index) => ({
-          id: index + 1,
-          name: name || 'Cliente sem nome',
-        }))
-        setRegularClients(clientsWithId)
+      if (data.custos !== undefined) {
+        const custos = data.custos
+        if (custos >= 1000) {
+          setCosts(`${(custos / 1000).toFixed(0)}k`)
+        } else {
+          setCosts(custos.toFixed(2))
+        }
       }
-
-      if (atendimentosDiaDaSemanaNoMes && Array.isArray(atendimentosDiaDaSemanaNoMes)) {
-        const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-        const newWeeklyData = days.map((day, index) => ({
-          day,
-          value: atendimentosDiaDaSemanaNoMes[index] || 0,
-        }))
-        setWeeklyData(newWeeklyData)
+      if (data.percentagem_crescimento_custos !== undefined) {
+        setCostsVariation(data.percentagem_crescimento_custos)
       }
-    } catch (err) {
-      console.error('❌ Erro ao buscar dados de finanças:', {
-        status: err.response?.status,
-        data: err.response?.data,
-        message: err.message,
-      })
-      setError('Erro ao carregar dados financeiros')
-    } finally {
-      setLoading(false)
+    } catch (error) {
+      console.error('Erro ao buscar dados do resumo:', error)
     }
   }
 
-  const addRevenue = (amount) => {
-
-    const currentAmount = parseFloat(monthlyRevenue.replace(',', '.'))
-    const newAmount = (currentAmount + amount).toFixed(2).replace('.', ',')
-    setMonthlyRevenue(newAmount)
-  }
-
-  const addCancellation = () => {
-    setCancellations((prev) => prev + 1)
-  }
-
-  async function fetchHistoryData() {
+  async function fetchFaturamentoData(periodo = 6) {
     try {
-      setHistoryLoading(true)
-
-      const months = Array.from({ length: 6 }, (_, i) => {
-        const date = new Date()
-        date.setMonth(date.getMonth() - i)
-        return date.getMonth() + 1
-      })
-
-      const startMonth = Math.min(...months)
-      const endMonth = Math.max(...months)
-
-      const response = await axios.get(`${API_URL}/api/insights/finance/historico`, {
-        headers: authHeadersRef.current,
+      const response = await axios.get(`${API_URL}/api/v1/faturamento`, {
         params: {
-          startMonth,
-          endMonth,
+          periodo_meses: periodo,
         },
-      })
-
-
-      if (Array.isArray(response.data)) {
-        const monthNames = [
-          'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-          'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-        ]
-
-        const historyFormatted = response.data.map((item) => ({
-          month: monthNames[item.month - 1] || `Mês ${item.month}`,
-          revenue: item.totalBilledInMonth || 0,
-          firstDay: item.firstDayOfMonth,
-          schedules: item.totalSchedulesInMonth,
-          canceledSchedules: item.totalCanceledSchedulesInMonth,
-        }))
-
-        setMonthHistory(historyFormatted)
-      } else if (response.data && typeof response.data === 'object') {
-        const monthNames = [
-          'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-          'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-        ]
-
-        const singleHistory = [{
-          month: monthNames[response.data.month - 1] || `Mês ${response.data.month}`,
-          revenue: response.data.totalBilledInMonth || 0,
-          firstDay: response.data.firstDayOfMonth,
-          schedules: response.data.totalSchedulesInMonth,
-          canceledSchedules: response.data.totalCanceledSchedulesInMonth,
-        }]
-
-        setMonthHistory(singleHistory)
-      }
-    } catch (err) {
-      console.error('❌ Erro ao buscar histórico:', {
-        status: err.response?.status,
-        data: err.response?.data,
-        message: err.message,
-      })
-    } finally {
-      setHistoryLoading(false)
-    }
-  }
-
-  const handleHistoryModalOpen = () => {
-    setHistoryModalOpen(true)
-    fetchHistoryData()
-  }
-
-  const maxValue = Math.max(...weeklyData.map(d => d.value))
-
-  const getBarHeight = (value) => {
-    return (value / maxValue) * 150
-  }
-
-  async function handleOpenInsights() {
-    try {
-      setInsightsLoading(true);
-
-      const response = await axios.get(`${ETL_URL}/api/v1/insights`, {
         headers: authHeadersRef.current,
-        params: {
-          page: 1,
-          page_size: 5
-        }
-      });
+      })
 
-      const mapped = response.data.items.map((item, index) => ({
-        id: index + 1,
-        tag: item.category?.toUpperCase() || 'GERAL',
-        title: item.title,
-        description: item.text,
-        icon: 'bulb-outline',
-        color: '#FFC107'
-      }));
-
-      setInsights(mapped);
-      setInsightsModalOpen(true);
-
-    } catch (err) {
-      console.error('Erro ao buscar insights:', err);
-    } finally {
-      setInsightsLoading(false); // 🔥 termina loading
+      const data = response.data
+      if (Array.isArray(data)) {
+        setFaturamentoData(data)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar dados de faturamento:', error)
     }
+  }
+
+  async function fetchAgendamentosSemanais() {
+    try {
+      const response = await axios.get(`${API_URL}/api/v1/agendamentos_semanais`, {
+        headers: authHeadersRef.current,
+      })
+
+      const data = response.data
+      if (typeof data === 'object') {
+        setAgendamentosSemanais(data)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar dados de agendamentos semanais:', error)
+    }
+  }
+
+  async function fetchTopServicos(periodo = 6) {
+    try {
+      const response = await axios.get(`${API_URL}/api/v1/top_servicos`, {
+        params: {
+          periodo_meses: periodo,
+        },
+        headers: authHeadersRef.current,
+      })
+
+      const data = response.data
+      if (Array.isArray(data)) {
+        setTopServiciosData(data)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar dados de top serviços:', error.response?.status, error.message)
+      setTopServiciosData([])
+    }
+  }
+
+  async function fetchClientesInativos() {
+    try {
+      const response = await axios.get(`${API_URL}/api/v1/clientes_inativos`, {
+        params: {
+          limit: 5,
+        },
+        headers: authHeadersRef.current,
+      })
+
+      const data = response.data
+      if (Array.isArray(data)) {
+        setInactiveClientsData(data)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar dados de clientes inativos:', error.response?.status, error.message)
+      setInactiveClientsData([])
+    }
+  }
+
+  useEffect(() => {
+    const init = async () => {
+      const token = await AsyncStorage.getItem('token')
+      authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
+      setReady(true)
+    }
+    init()
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
+    const setup = async () => {
+      if (!ready || !isMounted) return
+
+      if (Platform.OS === 'android') {
+        try {
+          await NavigationBar.setVisibilityAsync('hidden')
+        } catch (e) {
+          console.log('NavBar error ignored:', e)
+        }
+      }
+
+      fetchResumoData()
+      fetchFaturamentoData(6)
+      fetchAgendamentosSemanais()
+      fetchTopServicos(6)
+      fetchClientesInativos()
+    }
+
+    setup()
+
+    return () => {
+      isMounted = false
+    }
+  }, [ready])
+
+  useFocusEffect(
+    useCallback(() => {
+      if (ready) {
+        fetchResumoData()
+        fetchFaturamentoData(faturamentoPeriodo)
+        fetchAgendamentosSemanais()
+        fetchTopServicos(topServiciosPeriodo)
+      }
+    }, [ready, faturamentoPeriodo, topServiciosPeriodo])
+  )
+
+  const handleOpenInsights = () => {
+    setInsightsModalOpen(true)
+  }
+
+  const handleCloseInsights = () => {
+    setInsightsModalOpen(false)
+  }
+
+  const handleOpenHistory = () => {
+    setHistoryModalOpen(true)
+  }
+
+  const handleCloseHistory = () => {
+    setHistoryModalOpen(false)
+  }
+
+  const getVariationColor = (value) => {
+    return value >= 0 ? '#00C853' : '#E53935'
+  }
+
+  const getVariationIcon = (value) => {
+    return value >= 0 ? 'arrow-up' : 'arrow-down'
   }
 
   return (
@@ -250,13 +272,8 @@ export default function Finances() {
                 pressed && styles.headerButtonPressed,
               ]}
               onPress={handleOpenInsights}
-              disabled={insightsLoading}
             >
-              {insightsLoading ? (
-                <ActivityIndicator size="small" color="#FFC107" />
-              ) : (
-                <Ionicons name="bulb-outline" size={24} color="#FFC107" />
-              )}
+              <Ionicons name="bulb-outline" size={24} color="#FFC107" />
             </Pressable>
             <Pressable
               style={({ pressed }) => [
@@ -270,180 +287,495 @@ export default function Finances() {
           </View>
         </View>
 
-        {loading && (
+        {!loading ? (
+          <>
+            <View>
+              <View style={styles.kpiHeaderContainer}>
+                <Text style={styles.kpiSectionTitle}>KPIs</Text>
+                <Pressable onPress={() => setKpisInfoOpen(true)}>
+                  <Ionicons name="information-circle-outline" size={22} color="#982546" />
+                </Pressable>
+              </View>
+              <View style={styles.kpiContainer}>
+                <View style={styles.kpiCard}>
+                  <View style={[styles.kpiIconContainer, styles.iconOrange]}>
+                    <Ionicons name="cash-outline" size={28} color="#F57C00" />
+                  </View>
+                  <View style={styles.kpiContent}>
+                    <Text style={styles.kpiLabel}>TKM</Text>
+                    <Text style={styles.kpiValue}>R$ {tkmValue}</Text>
+                  </View>
+                  <View style={styles.kpiVariation}>
+                    <Ionicons
+                      name={getVariationIcon(tkmVariation)}
+                      size={16}
+                      color={getVariationColor(tkmVariation)}
+                    />
+                    <Text style={[styles.variationText, { color: getVariationColor(tkmVariation) }]}>
+                      ~{Math.abs(tkmVariation)}%
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.kpiCard}>
+                  <View style={[styles.kpiIconContainer, styles.iconGray]}>
+                    <Ionicons name="wallet-outline" size={28} color="#616161" />
+                  </View>
+                  <View style={styles.kpiContent}>
+                    <Text style={styles.kpiLabel}>RECEITA</Text>
+                    <Text style={styles.kpiValue}>R$ {monthlyRevenue}</Text>
+                  </View>
+                  <View style={styles.kpiVariation}>
+                    <Ionicons
+                      name={getVariationIcon(revenueVariation)}
+                      size={16}
+                      color={getVariationColor(revenueVariation)}
+                    />
+                    <Text style={[styles.variationText, { color: getVariationColor(revenueVariation) }]}>
+                      ~{Math.abs(revenueVariation)}%
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.kpiCard}>
+                  <View style={[styles.kpiIconContainer, styles.iconRed]}>
+                    <Ionicons name="document-outline" size={28} color="#E53935" />
+                  </View>
+                  <View style={styles.kpiContent}>
+                    <Text style={styles.kpiLabel}>CUSTOS</Text>
+                    <Text style={styles.kpiValue}>R$ {costs}</Text>
+                  </View>
+                  <View style={styles.kpiVariation}>
+                    <Ionicons
+                      name={getVariationIcon(costsVariation)}
+                      size={16}
+                      color={getVariationColor(costsVariation)}
+                    />
+                    <Text style={[styles.variationText, { color: getVariationColor(costsVariation) }]}>
+                      ~{Math.abs(costsVariation)}%
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.chartContainer}>
+              <View style={styles.chartHeader}>
+                <Text style={styles.chartTitle}>Faturamento</Text>
+                <Pressable
+                  style={styles.periodSelector}
+                  onPress={() => setHistoryModalOpen(true)}
+                >
+                  <Text style={styles.periodText}>
+                    {faturamentoPeriodo} mês{faturamentoPeriodo > 1 ? 'es' : ''}
+                  </Text>
+                  <Ionicons name="chevron-down" size={18} color="#982546" />
+                </Pressable>
+              </View>
+              <View style={styles.chartContent}>
+                <View style={styles.barsContainer}>
+                  {faturamentoData.length > 0 ? (
+                    faturamentoData.map((item, index) => {
+                      const date = new Date(item.mes)
+                      const monthShort = date.toLocaleDateString('pt-BR', {
+                        month: 'short',
+                      })
+                      const maxValue = Math.max(
+                        ...faturamentoData.map((d) => d.valor),
+                        1
+                      )
+                      const height = (item.valor / maxValue) * 150
+
+                      return (
+                        <View key={index} style={styles.barWrapper}>
+                          <View
+                            style={[
+                              styles.bar,
+                              {
+                                height: Math.max(20, height),
+                              },
+                            ]}
+                          />
+                          <Text style={styles.dayLabel}>{monthShort}</Text>
+                        </View>
+                      )
+                    })
+                  ) : (
+                    weeklyData.map((item, index) => (
+                      <View key={index} style={styles.barWrapper}>
+                        <View
+                          style={[
+                            styles.bar,
+                            {
+                              height: Math.max(20, Math.random() * 150),
+                            },
+                          ]}
+                        />
+                        <Text style={styles.dayLabel}>{item.day}</Text>
+                      </View>
+                    ))
+                  )}
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.chartContainer}>
+              <View style={styles.chartHeader}>
+                <Text style={styles.chartTitle}>Agendamentos Semanais</Text>
+                <Pressable onPress={() => setAgendamentosInfoOpen(true)}>
+                  <Ionicons name="information-circle-outline" size={20} color="#982546" />
+                </Pressable>
+              </View>
+              <View style={styles.chartContent}>
+                <View style={styles.barsContainer}>
+                  {[
+                    { key: 'domingo', label: 'Dom' },
+                    { key: 'segunda', label: 'Seg' },
+                    { key: 'terca', label: 'Ter' },
+                    { key: 'quarta', label: 'Qua' },
+                    { key: 'quinta', label: 'Qui' },
+                    { key: 'sexta', label: 'Sex' },
+                    { key: 'sabado', label: 'Sab' },
+                  ].map((day, index) => {
+                    const maxValue = Math.max(
+                      ...Object.values(agendamentosSemanais),
+                      1
+                    )
+                    const height =
+                      ((agendamentosSemanais[day.key] || 0) / maxValue) * 150
+
+                    return (
+                      <View key={index} style={styles.barWrapper}>
+                        <View
+                          style={[
+                            styles.bar,
+                            {
+                              height: Math.max(20, height),
+                            },
+                          ]}
+                        />
+                        <Text style={styles.dayLabel}>{day.label}</Text>
+                        <Text style={styles.barValue}>
+                          {agendamentosSemanais[day.key] || 0}
+                        </Text>
+                      </View>
+                    )
+                  })}
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.chartContainer}>
+              <View style={styles.chartHeaderWithInfo}>
+                <View style={styles.chartHeaderLeft}>
+                  <Text style={styles.sectionTitle}>Top Serviços</Text>
+                  <Pressable onPress={() => setTopServiciosInfoOpen(true)} style={styles.infoIconSmall}>
+                    <Ionicons name="information-circle-outline" size={18} color="#982546" />
+                  </Pressable>
+                </View>
+                <Pressable
+                  style={styles.periodSelector}
+                  onPress={() => setTopServiciosModalOpen(true)}
+                >
+                  <Text style={styles.periodText}>
+                    {topServiciosPeriodo} mês{topServiciosPeriodo > 1 ? 'es' : ''}
+                  </Text>
+                  <Ionicons name="chevron-down" size={18} color="#982546" />
+                </Pressable>
+              </View>
+              {topServiciosData.length > 0 ? (
+                topServiciosData.map((service, index) => (
+                  <View key={index} style={styles.serviceItem}>
+                    <View style={styles.serviceNumber}>
+                      <Text style={styles.serviceNumberText}>{index + 1}</Text>
+                    </View>
+                    <View style={styles.serviceInfo}>
+                      <Text style={styles.serviceName}>{service.nome_servico || '-'}</Text>
+                      <Text style={styles.servicePercentage}>
+                        {service.porcentagem_total ? service.porcentagem_total.toFixed(2) : '0'}%
+                      </Text>
+                    </View>
+                    <Text style={styles.serviceCount}>
+                      {service.qtd_realizados || 0}
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.noData}>Nenhum dado disponível</Text>
+              )}
+            </View>
+
+            <View style={[styles.chartContainer, styles.lastContainer]}>
+              <View style={styles.inactiveHeaderWithInfo}>
+                <View style={styles.chartHeaderLeft}>
+                  <Text style={styles.sectionTitle}>Inativos (Alerta)</Text>
+                  <Pressable onPress={() => setInactivosInfoOpen(true)} style={styles.infoIconSmall}>
+                    <Ionicons name="information-circle-outline" size={18} color="#982546" />
+                  </Pressable>
+                </View>
+                <Text style={styles.alertCount}>VER TODOS</Text>
+              </View>
+              {inactiveClientsData.length > 0 ? (
+                inactiveClientsData.slice(0, 5).map((client, index) => {
+                  const isBadgeAlert = (client.qtd_meses_ultimo_agendamento || 0) >= 6
+                  const badgeType = isBadgeAlert ? 'ALERTA' : 'INFO'
+                  
+                  return (
+                    <View key={index} style={styles.inactiveItem}>
+                      <View>
+                        <Text style={styles.inactiveName}>{client.nome_cliente || '-'}</Text>
+                        <Text style={styles.inactiveDate}>
+                          {client.qtd_meses_ultimo_agendamento}
+                          {' '}
+                          {(client.qtd_meses_ultimo_agendamento || 0) > 1 ? 'meses' : 'mês'}
+                        </Text>
+                      </View>
+                      <View
+                        style={[
+                          styles.badge,
+                          badgeType === 'ALERTA' ? styles.badgeAlert : styles.badgeInfo,
+                        ]}
+                      >
+                        <Text style={styles.badgeText}>{badgeType}</Text>
+                      </View>
+                    </View>
+                  )
+                })
+              ) : (
+                <Text style={styles.noData}>Nenhum cliente inativo</Text>
+              )}
+            </View>
+          </>
+        ) : (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#982546" />
             <Text style={styles.loadingText}>Carregando dados...</Text>
           </View>
         )}
-
-        {error !== '' && (
-          <View style={styles.errorContainer}>
-            <Ionicons name="alert-circle" size={24} color="#BE4053" />
-            <Text style={styles.errorText}>{error}</Text>
-            <Pressable
-              style={styles.retryButton}
-              onPress={fetchFinancesData}
-            >
-              <Text style={styles.retryButtonText}>Tentar Novamente</Text>
-            </Pressable>
-          </View>
-        )}
-
-        {!loading && error === '' && (
-          <>
-            <View style={styles.kpiContainer}>
-              <View style={styles.kpiCard}>
-                <View style={[styles.kpiIconContainer, styles.iconGreen]}>
-                  <Ionicons name="cash-outline" size={24} color="#00C853" />
-                </View>
-                <View style={styles.kpiContent}>
-                  <Text style={styles.kpiLabel}>Faturamento mensal</Text>
-                  <Text style={styles.kpiValue}>R$ {monthlyRevenue}</Text>
-                </View>
-                <View style={styles.historyButtonContainer}>
-                  <Text style={styles.historyButtonLabel}>Histórico</Text>
-                  <Pressable
-                    onPress={handleHistoryModalOpen}
-                    style={({ pressed }) => [
-                      styles.historyButton,
-                      pressed && styles.historyButtonPressed,
-                    ]}
-                  >
-                    <Ionicons name="time" size={24} color="#5c0f25" />
-                  </Pressable>
-                </View>
-              </View>
-
-              <View style={[styles.kpiCard, styles.cancellationCard]}>
-                <View style={[styles.kpiIconContainer, styles.iconRed]}>
-                  <Ionicons name="close-circle-outline" size={24} color="#FF5252" />
-                </View>
-                <View style={styles.kpiContent}>
-                  <Text style={styles.kpiLabel}>Cancelamentos</Text>
-                  <Text style={styles.kpiValue}>{cancellations}</Text>
-                </View>
-              </View>
-            </View>
-
-            {weeklyData.some(d => d.value > 0) && (
-              <View style={styles.chartContainer}>
-                <Text style={styles.chartTitle}>Movimentação Semanal</Text>
-                <View style={styles.chartContent}>
-                  <View style={styles.barsContainer}>
-                    {weeklyData.map((item, index) => (
-                      <View key={index} style={styles.barWrapper}>
-                        <View
-                          style={[
-                            styles.bar,
-                            { height: getBarHeight(item.value) },
-                          ]}
-                        />
-                        <Text style={styles.dayLabel}>{item.day}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              </View>
-            )}
-
-            {topServices.length > 0 && (
-              <View style={styles.servicesContainer}>
-                <Text style={styles.sectionTitle}>Serviços Mais Realizados</Text>
-                {topServices.map((service) => (
-                  <View key={service.id} style={styles.serviceItem}>
-                    <View style={styles.serviceNumber}>
-                      <Text style={styles.serviceNumberText}>{service.id}</Text>
-                    </View>
-                    <Text style={styles.serviceName}>{service.name}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {regularClients.length > 0 && (
-              <View style={styles.clientsContainer}>
-                <Text style={styles.sectionTitle}>Clientes Regulares</Text>
-                {regularClients.map((client) => (
-                  <View key={client.id} style={styles.clientItem}>
-                    <Text style={styles.clientName}>{client.name}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </>
-        )}
       </ScrollView>
 
       <Modal
-        visible={historyModalOpen}
-        transparent={true}
+        visible={insightsModalOpen}
+        transparent
         animationType="slide"
-        onRequestClose={() => setHistoryModalOpen(false)}
+        onRequestClose={handleCloseInsights}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Histórico de Faturamento</Text>
-              <Pressable
-                onPress={() => setHistoryModalOpen(false)}
-                style={({ pressed }) => pressed && { opacity: 0.7 }}
-              >
-                <Ionicons name="close" size={28} color="#5c0f25" />
+              <Text style={styles.modalTitle}>Insights</Text>
+              <Pressable onPress={handleCloseInsights}>
+                <Ionicons name="close" size={24} color="#5c0f25" />
               </Pressable>
             </View>
-
-            <ScrollView style={styles.historyList}>
-              {historyLoading ? (
-                <View style={styles.historyLoadingContainer}>
-                  <ActivityIndicator size="large" color="#982546" />
-                  <Text style={styles.historyLoadingText}>Carregando histórico...</Text>
-                </View>
-              ) : monthHistory.length > 0 ? (
-                monthHistory.map((item, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.historyItem}
-                    onPress={() => {
-                      Alert.alert(
-                        `${item.month}`,
-                        `Faturamento: R$ ${item.revenue.toFixed(2).replace('.', ',')}\nAgendamentos: ${item.schedules}\nCancelados: ${item.canceledSchedules}`
-                      )
-                    }}
-                  >
-                    <View style={styles.historyItemContent}>
-                      <Text style={styles.historyMonth}>{item.month}</Text>
-                      <Text style={styles.historyRevenue}>R$ {item.revenue.toFixed(2).replace('.', ',')}</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={24} color="#982546" />
-                  </TouchableOpacity>
-                ))
-              ) : (
-                <View style={styles.historyEmptyContainer}>
-                  <Text style={styles.historyEmptyText}>Sem dados de histórico</Text>
-                </View>
-              )}
-            </ScrollView>
-
+            {insights.map((insight, index) => (
+              <View key={index} style={styles.modalInsightItem}>
+                <Text style={styles.modalInsightText}>{insight.text}</Text>
+              </View>
+            ))}
             <Pressable
-              onPress={() => setHistoryModalOpen(false)}
               style={({ pressed }) => [
                 styles.closeButton,
                 pressed && styles.closeButtonPressed,
               ]}
+              onPress={handleCloseInsights}
             >
-              <Text style={styles.closeButtonText}>Voltar</Text>
+              <Text style={styles.closeButtonText}>Fechar</Text>
             </Pressable>
           </View>
         </View>
       </Modal>
 
-      <BusinessInsightsModal
-        visible={insightsModalOpen}
-        onClose={() => setInsightsModalOpen(false)}
-        data={insights}
-      />
-      <NavbarPro active="Finanças" />
+      <Modal
+        visible={topServiciosModalOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setTopServiciosModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Período - Top Serviços</Text>
+              <Pressable onPress={() => setTopServiciosModalOpen(false)}>
+                <Ionicons name="close" size={24} color="#5c0f25" />
+              </Pressable>
+            </View>
+            <View style={styles.periodGrid}>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((mes) => (
+                <Pressable
+                  key={mes}
+                  style={[
+                    styles.periodOption,
+                    topServiciosPeriodo === mes && styles.periodOptionActive,
+                  ]}
+                  onPress={() => {
+                    setTopServiciosPeriodo(mes)
+                    fetchTopServicos(mes)
+                    setTopServiciosModalOpen(false)
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.periodOptionText,
+                      topServiciosPeriodo === mes && styles.periodOptionTextActive,
+                    ]}
+                  >
+                    {mes} mês{mes > 1 ? 'es' : ''}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.closeButton,
+                pressed && styles.closeButtonPressed,
+              ]}
+              onPress={() => setTopServiciosModalOpen(false)}
+            >
+              <Text style={styles.closeButtonText}>Fechar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={agendamentosInfoOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAgendamentosInfoOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.infoModalContent]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Informação</Text>
+              <Pressable onPress={() => setAgendamentosInfoOpen(false)}>
+                <Ionicons name="close" size={24} color="#5c0f25" />
+              </Pressable>
+            </View>
+            <View style={styles.infoBox}>
+              <Ionicons name="information-circle" size={32} color="#982546" style={{ marginBottom: 12 }} />
+              <Text style={styles.infoText}>
+                Os agendamentos mostrados são referentes ao mês passado.
+              </Text>
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.closeButton,
+                pressed && styles.closeButtonPressed,
+              ]}
+              onPress={() => setAgendamentosInfoOpen(false)}
+            >
+              <Text style={styles.closeButtonText}>Fechar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={kpisInfoOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setKpisInfoOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.infoModalContent]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Sobre as KPIs</Text>
+              <Pressable onPress={() => setKpisInfoOpen(false)}>
+                <Ionicons name="close" size={24} color="#5c0f25" />
+              </Pressable>
+            </View>
+            <View style={styles.infoBox}>
+              <Ionicons name="information-circle" size={32} color="#982546" style={{ marginBottom: 12 }} />
+              <Text style={styles.infoText}>
+                <Text style={{ fontWeight: '700' }}>Valores:</Text>{'\n'}
+                Referentes ao mês atual.{'\n\n'}
+                <Text style={{ fontWeight: '700' }}>Porcentagens:</Text>{'\n'}
+                Referentes ao comparativo com o mês anterior.{'\n\n'}
+                <Text style={{ fontWeight: '700' }}>Custos:</Text>{'\n'}
+                Atualizados no dia seguinte após você subir a planilha de custos.
+              </Text>
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.closeButton,
+                pressed && styles.closeButtonPressed,
+              ]}
+              onPress={() => setKpisInfoOpen(false)}
+            >
+              <Text style={styles.closeButtonText}>Fechar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={topServiciosInfoOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTopServiciosInfoOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.infoModalContent]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Top Servi\u00e7os</Text>
+              <Pressable onPress={() => setTopServiciosInfoOpen(false)}>
+                <Ionicons name="close" size={24} color="#5c0f25" />
+              </Pressable>
+            </View>
+            <View style={styles.infoBox}>
+              <Ionicons name="information-circle" size={32} color="#982546" style={{ marginBottom: 12 }} />
+              <Text style={styles.infoText}>
+                Estes dados são referentes aos últimos 3 meses de serviços realizados.
+              </Text>
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.closeButton,
+                pressed && styles.closeButtonPressed,
+              ]}
+              onPress={() => setTopServiciosInfoOpen(false)}
+            >
+              <Text style={styles.closeButtonText}>Fechar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={inactivosInfoOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setInactivosInfoOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.infoModalContent]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Clientes Inativos</Text>
+              <Pressable onPress={() => setInactivosInfoOpen(false)}>
+                <Ionicons name="close" size={24} color="#5c0f25" />
+              </Pressable>
+            </View>
+            <View style={styles.infoBox}>
+              <Ionicons name="information-circle" size={32} color="#982546" style={{ marginBottom: 12 }} />
+              <Text style={styles.infoText}>
+                Clientes são considerados inativos a partir de 3 meses sem agendamentos.
+              </Text>
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.closeButton,
+                pressed && styles.closeButtonPressed,
+              ]}
+              onPress={() => setInactivosInfoOpen(false)}
+            >
+              <Text style={styles.closeButtonText}>Fechar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <NavbarPro />
     </View>
   )
 }
@@ -459,7 +791,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 20,
+    paddingBottom: 100,
   },
   header: {
     flexDirection: 'row',
@@ -494,25 +826,36 @@ const styles = StyleSheet.create({
   headerButtonPressed: {
     opacity: 0.7,
   },
+  kpiHeaderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  kpiSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#5c0f25',
+  },
   kpiContainer: {
     marginBottom: 24,
     gap: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   kpiCard: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 16,
-    flexDirection: 'row',
+    flex: 1,
+    flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
-  },
-  cancellationCard: {
-    marginBottom: 0,
   },
   kpiIconContainer: {
     width: 56,
@@ -520,48 +863,67 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 0,
+    marginBottom: 12,
   },
-  iconGreen: {
-    backgroundColor: '#E8F5E9',
+  iconOrange: {
+    backgroundColor: '#FFF3E0',
+  },
+  iconGray: {
+    backgroundColor: '#F5F5F5',
   },
   iconRed: {
     backgroundColor: '#FFEBEE',
   },
   kpiContent: {
     flex: 1,
+    alignItems: 'center',
   },
   kpiLabel: {
     fontSize: 12,
     color: '#982546',
     fontWeight: '500',
     marginBottom: 4,
+    textAlign: 'center',
   },
   kpiValue: {
     fontSize: 22,
     fontWeight: '700',
     color: '#5c0f25',
+    textAlign: 'center',
   },
-  historyButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 10,
-    backgroundColor: '#FFF3DC',
-    justifyContent: 'center',
+  kpiVariation: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  historyButtonPressed: {
-    opacity: 0.6,
-  },
-  historyButtonContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
     gap: 4,
+    marginTop: 8,
   },
-  historyButtonLabel: {
-    fontSize: 10,
+  variationText: {
+    fontSize: 12,
     fontWeight: '600',
-    color: '#5c0f25',
+  },
+  insightsSection: {
+    backgroundColor: '#F0F4FF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+    padding: 16,
+    marginBottom: 24,
+  },
+  insightItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+    gap: 12,
+  },
+  insightIcon: {
+    marginTop: 2,
+    minWidth: 20,
+  },
+  insightText: {
+    fontSize: 13,
+    color: '#333333',
+    flex: 1,
   },
   chartContainer: {
     backgroundColor: '#ffffff',
@@ -574,37 +936,207 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  lastContainer: {
+    marginBottom: 0,
+  },
+  chartHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   chartTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#5c0f25',
-    marginBottom: 16,
+    marginBottom: 40,
+  },
+  periodSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+  },
+  periodText: {
+    fontSize: 14,
+    color: '#982546',
+    fontWeight: '600',
   },
   chartContent: {
-    height: 200,
+    height: 180,
     justifyContent: 'flex-end',
   },
   barsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'flex-end',
-    height: 180,
+    height: 150,
   },
   barWrapper: {
     alignItems: 'center',
     flex: 1,
   },
   bar: {
-    width: 32,
+    width: 28,
     backgroundColor: '#8B4555',
     borderRadius: 4,
     marginBottom: 12,
   },
   dayLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#982546',
     fontWeight: '600',
+  },
+  daysContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    height: 100,
+  },
+  dayCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+  },
+  dayCount: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#5c0f25',
+  },
+  dayCircleText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666666',
+  },
+  barValue: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#982546',
     marginTop: 4,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#5c0f25',
+  },
+  serviceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  serviceNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#FFE0E6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  serviceNumberText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#982546',
+  },
+  serviceInfo: {
+    flex: 1,
+  },
+  serviceName: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#5c0f25',
+    marginBottom: 4,
+  },
+  servicePercentage: {
+    fontSize: 12,
+    color: '#999999',
+  },
+  serviceCount: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#982546',
+  },
+  noData: {
+    fontSize: 14,
+    color: '#999999',
+    textAlign: 'center',
+    paddingVertical: 16,
+  },
+  chartHeaderWithInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  inactiveHeaderWithInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  chartHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  infoIconSmall: {
+    padding: 4,
+  },
+  inactiveHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  alertCount: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#982546',
+  },
+  inactiveItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  inactiveName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#5c0f25',
+  },
+  inactiveDate: {
+    fontSize: 12,
+    color: '#999999',
+    marginTop: 4,
+  },
+  badge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  badgeAlert: {
+    backgroundColor: '#FFCDD2',
+  },
+  badgeInfo: {
+    backgroundColor: '#FFF9C4',
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#5c0f25',
   },
   modalOverlay: {
     flex: 1,
@@ -630,32 +1162,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#5c0f25',
   },
-  historyList: {
-    marginBottom: 16,
-    maxHeight: 300,
-  },
-  historyItem: {
+  modalInsightItem: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
   },
-  historyItemContent: {
-    flex: 1,
-  },
-  historyMonth: {
+  modalInsightText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#5c0f25',
-    marginBottom: 4,
-  },
-  historyRevenue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#00C853',
+    color: '#333333',
+    lineHeight: 20,
   },
   closeButton: {
     backgroundColor: '#5c0f25',
@@ -675,69 +1191,54 @@ const styles = StyleSheet.create({
     color: '#FFF3DC',
     textAlign: 'center',
   },
-  servicesContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+  infoModalContent: {
+    maxHeight: '40%',
   },
-  clientsContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+  infoBox: {
+    backgroundColor: '#FFF9E6',
+    borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    alignItems: 'center',
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#982546',
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+  infoText: {
+    fontSize: 14,
     color: '#5c0f25',
-    marginBottom: 12,
+    lineHeight: 20,
+    textAlign: 'center',
+    fontWeight: '500',
   },
-  serviceItem: {
+  periodGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    gap: 8,
   },
-  serviceNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#FFEBEE',
+  periodOption: {
+    width: '48%',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
   },
-  serviceNumberText: {
+  periodOptionActive: {
+    backgroundColor: '#5c0f25',
+    borderColor: '#5c0f25',
+  },
+  periodOptionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#982546',
+    color: '#666666',
   },
-  serviceName: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#5c0f25',
-  },
-  clientItem: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  clientName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#5c0f25',
+  periodOptionTextActive: {
+    color: '#ffffff',
   },
   loadingContainer: {
     alignItems: 'center',
@@ -748,52 +1249,5 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     color: '#7A5A52',
-  },
-  errorContainer: {
-    backgroundColor: '#FFE8EC',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#FFD4E1',
-  },
-  errorText: {
-    fontSize: 14,
-    color: '#BE4053',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  retryButton: {
-    marginTop: 12,
-    backgroundColor: '#BE4053',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 12,
-  },
-  historyLoadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-  },
-  historyLoadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#7A5A52',
-  },
-  historyEmptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-  },
-  historyEmptyText: {
-    fontSize: 14,
-    color: '#982546',
-    fontWeight: '500',
   },
 })
