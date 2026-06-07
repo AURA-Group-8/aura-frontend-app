@@ -20,6 +20,8 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [buttonHovered, setButtonHovered] = useState(false);
+  const [isButtonPressed, setIsButtonPressed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [emailError, setEmailError] = useState('');
   const [senhaError, setSenhaError] = useState('');
@@ -31,6 +33,7 @@ export default function Login() {
   const [popupType, setPopupType] = useState('success');
 
   async function handleLogin() {
+    setIsLoading(true);
     let hasError = false;
 
     if (!email.trim()) {
@@ -91,6 +94,7 @@ export default function Login() {
 
             setTimeout(() => {
               router.push('/Professional/schedules-home');
+              setIsLoading(false);
             }, 1500);
           } else {
             setPopupMessage('Login realizado com sucesso!');
@@ -99,19 +103,24 @@ export default function Login() {
 
             setTimeout(() => {
               router.push('/Client/schedules');
+              setIsLoading(false);
             }, 1500);
           }
         } else {
           setPopupMessage('Erro ao realizar login. Tente novamente.');
           setPopupType('error');
           setPopupVisible(true);
+          setIsLoading(false);
         }
       } catch (error) {
         console.error('Erro no login:', error);
         setPopupMessage('Erro ao realizar login. Tente novamente.');
         setPopupType('error');
         setPopupVisible(true);
+        setIsLoading(false);
       }
+    } else {
+      setIsLoading(false);
     }
   };
 
@@ -196,13 +205,27 @@ export default function Login() {
                   Cadastre-se
                 </Text>
               </Text>
+              
+                <Text style={localStyles.link} onPress={() => router.push('/Auth/forgot-password')}>
+                  Esqueci a senha
+                </Text>
+              
 
               <Pressable
-                style={[styles.btnLogin, { backgroundColor: '#fff3dc' }]}
+                style={[
+                  styles.btnLogin,
+                  {
+                    backgroundColor: isButtonPressed ? '#e6e6cc' : '#fff3dc',
+                    opacity: isLoading ? 0.6 : 1,
+                  }
+                ]}
                 onPress={handleLogin}
+                onPressIn={() => setIsButtonPressed(true)}
+                onPressOut={() => setIsButtonPressed(false)}
+                disabled={isLoading}
               >
                 <Text style={[styles.btnLoginText, { color: '#5c0f25' }]}>
-                  ENTRAR
+                  {isLoading ? 'ENTRANDO...' : 'ENTRAR'}
                 </Text>
               </Pressable>
 

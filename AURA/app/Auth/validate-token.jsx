@@ -12,17 +12,25 @@ import {
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import CardPopUp from '../Professional/_Components/card-popUp';
 
-export default function ForgotPassword() {
+export default function ValidateToken() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
 
-  const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState('');
+  const [token] = useState(params?.token || '');
+  const [userId] = useState(params?.userId || '');
+  const [email] = useState(params?.email || '');
+
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
@@ -46,21 +54,50 @@ export default function ForgotPassword() {
     };
   }, []);
 
-  const validateEmail = (emailValue) => {
-    if (!emailValue.trim()) {
-      setEmailError('Email é obrigatório');
-      return false;
+  const validatePasswords = () => {
+    let hasError = false;
+
+    const passwordTrim = password.trim();
+    const confirmTrim = confirmPassword.trim();
+
+    // Regex para detectar emojis
+    const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/u;
+
+    // Validar se campos estão preenchidos
+    if (!passwordTrim) {
+      setPasswordError('Senha é obrigatória');
+      hasError = true;
+    } else if (emojiRegex.test(passwordTrim)) {
+      setPasswordError('Emojis não são permitidos na senha');
+      hasError = true;
+    } else if (passwordTrim.length < 6) {
+      setPasswordError('A senha deve ter no mínimo 6 caracteres');
+      hasError = true;
+    } else {
+      setPasswordError('');
     }
-    if (!emailValue.includes('@') || !emailValue.includes('.')) {
-      setEmailError('Email inválido');
-      return false;
+
+    if (!confirmTrim) {
+      setConfirmPasswordError('Confirmação de senha é obrigatória');
+      hasError = true;
+    } else if (emojiRegex.test(confirmTrim)) {
+      setConfirmPasswordError('Emojis não são permitidos na senha');
+      hasError = true;
+    } else if (confirmTrim.length < 6) {
+      setConfirmPasswordError('A senha deve ter no mínimo 6 caracteres');
+      hasError = true;
+    } else if (passwordTrim !== confirmTrim) {
+      setConfirmPasswordError('As senhas não coincidem');
+      hasError = true;
+    } else {
+      setConfirmPasswordError('');
     }
-    setEmailError('');
-    return true;
+
+    return !hasError;
   };
 
-  const handleSendEmail = async () => {
-    if (!validateEmail(email)) {
+  const handleChangePassword = async () => {
+    if (!validatePasswords()) {
       return;
     }
 
@@ -69,35 +106,37 @@ export default function ForgotPassword() {
     setIsSubmitting(true);
 
     try {
-      const response = await axios(`${API_URL}/api/mensagens/esqueci-senha`, {
-        method: 'POST',
+      const authToken = await AsyncStorage.getItem('token');
+      const storedUserId = await AsyncStorage.getItem('userId');
+
+      const requestUserId = userId || storedUserId;
+
+      const response = await axios(`${API_URL}/api/usuarios/${requestUserId}`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
         },
         data: JSON.stringify({
-          email: email,
+          password: password.trim(),
         }),
       });
 
-      console.log('Email enviado:', response.data);
+      console.log('Senha alterada com sucesso:', response.data);
 
-      setPopupMessage('Email enviado com sucesso!');
+      setPopupMessage('Senha alterada com sucesso!');
       setPopupType('success');
       setPopupVisible(true);
 
+      setPassword('');
+      setConfirmPassword('');
+
       setTimeout(() => {
-        router.push({
-          pathname: '/Auth/validate-token',
-          params: {
-            token: response.data.token,
-            userId: response.data.userId,
-            email: email,
-          },
-        });
+        router.push('/Auth/login');
       }, 1500);
     } catch (error) {
-      console.error('Erro ao enviar email:', error.response?.data || error.message);
-      setPopupMessage('Erro ao enviar email. Verifique se o email está cadastrado.');
+      console.error('Erro ao alterar senha:', error.response?.data || error.message);
+      setPopupMessage('Erro ao alterar a senha. Tente novamente.');
       setPopupType('error');
       setPopupVisible(true);
     } finally {
@@ -137,34 +176,53 @@ export default function ForgotPassword() {
             }}
           >
             <View style={localStyles.container}>
-              <Text style={localStyles.title}>Esqueci a Senha</Text>
-              
-              <Text style={localStyles.subtitle}>
-                Confirme seu e-mail cadastrado para receber o código de redefinição de senha
-              </Text>
+              <Text style={localStyles.title}>Alterar Senha</Text>
 
               <View style={localStyles.formContainer}>
-                <Text style={localStyles.label}>Confirmar E-mail:</Text>
-                
+                <Text style={localStyles.label}>Nova Senha:</Text>
+
                 <TextInput
                   style={[
                     localStyles.textInput,
-                    emailError && localStyles.textInputError,
+                    passwordError && localStyles.textInputError,
                   ]}
-                  placeholder="Digite seu e-mail"
+                  placeholder="Digite a nova senha"
                   placeholderTextColor="#999"
-                  value={email}
+                  value={password}
                   onChangeText={(text) => {
-                    setEmail(text);
-                    if (emailError) setEmailError('');
+                    setPassword(text);
+                    if (passwordError) setPasswordError('');
                   }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
+                  secureTextEntry
                   editable={!isSubmitting}
                 />
 
-                {emailError && (
-                  <Text style={localStyles.errorText}>{emailError}</Text>
+                {passwordError && (
+                  <Text style={localStyles.errorText}>{passwordError}</Text>
+                )}
+
+                <Text style={[localStyles.label, { marginTop: 16 }]}>
+                  Confirmar Senha:
+                </Text>
+
+                <TextInput
+                  style={[
+                    localStyles.textInput,
+                    confirmPasswordError && localStyles.textInputError,
+                  ]}
+                  placeholder="Confirme a nova senha"
+                  placeholderTextColor="#999"
+                  value={confirmPassword}
+                  onChangeText={(text) => {
+                    setConfirmPassword(text);
+                    if (confirmPasswordError) setConfirmPasswordError('');
+                  }}
+                  secureTextEntry
+                  editable={!isSubmitting}
+                />
+
+                {confirmPasswordError && (
+                  <Text style={localStyles.errorText}>{confirmPasswordError}</Text>
                 )}
 
                 <View style={localStyles.buttonContainer}>
@@ -181,11 +239,11 @@ export default function ForgotPassword() {
                       localStyles.submitButton,
                       isSubmitting && localStyles.submitButtonDisabled,
                     ]}
-                    onPress={handleSendEmail}
+                    onPress={handleChangePassword}
                     disabled={isSubmitting}
                   >
                     <Text style={localStyles.submitButtonText}>
-                      {isSubmitting ? 'Enviando...' : 'Alterar'}
+                      {isSubmitting ? 'Alterando...' : 'Alterar'}
                     </Text>
                   </Pressable>
                 </View>
@@ -217,16 +275,8 @@ const localStyles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: '#FFF3DC',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-
-  subtitle: {
-    fontSize: 16,
-    color: '#FFF3DC',
-    textAlign: 'center',
     marginBottom: 32,
-    lineHeight: 24,
+    textAlign: 'center',
   },
 
   formContainer: {
