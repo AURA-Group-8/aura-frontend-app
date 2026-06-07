@@ -32,13 +32,16 @@ export default function UploadsScreen() {
         
     const getFileTemplate = async () => {
         try {
+            console.info('Iniciando download do template de arquivo...')
             const url = `${API_ETL_URL}/api/v1/template`
 
+            console.info('Fazendo requisição para:', url)
             const response = await fetch(url)
             const blob = await response.blob()
 
             const reader = new FileReader()
 
+            console.info('Iniciando leitura do blob...')
             reader.onloadend = async () => {
                 const base64 = reader.result.split(',')[1]
 
@@ -48,7 +51,7 @@ export default function UploadsScreen() {
                     encoding: FileSystem.EncodingType.Base64,
                 })
 
-                console.log('Arquivo salvo em:', fileUri)
+                console.debug('Arquivo salvo em:', fileUri)
 
                 await Sharing.shareAsync(fileUri)
             }
@@ -80,6 +83,8 @@ export default function UploadsScreen() {
                 type: file.mimeType || 'application/octet-stream',
             })
 
+            console.info('Iniciando upload do arquivo:', file.name)
+            console.info('URL de envio:', `${API_ETL_URL}/api/v1/custos`)
             const response = await fetch(`${API_ETL_URL}/api/v1/custos`, {
                 method: 'POST',
                 headers: {
@@ -88,13 +93,16 @@ export default function UploadsScreen() {
                 body: formData,
             })
 
+            const data = await response.json()
+            console.debug('Resposta do upload:', data)
             if (response.ok) {
                 setPopupVisible(true);
                 setPopupMessage('Arquivo enviado com sucesso!');
                 setPopupType('success');
             } else {
+                console.error('Erro no upload:', data);
                 setPopupVisible(true);
-                setPopupMessage('Falha ao enviar o arquivo. Tente novamente mais tarde.');
+                setPopupMessage(`Falha ao enviar o arquivo. ${data.detail}.`);
                 setPopupType('failed');
             }
 

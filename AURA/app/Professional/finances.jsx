@@ -252,8 +252,31 @@ export default function Finances() {
     return value >= 0 ? '#00C853' : '#E53935'
   }
 
-  const getVariationIcon = (value) => {
-    return value >= 0 ? 'arrow-up' : 'arrow-down'
+      const response = await axios.get(`${ETL_URL}/api/v1/insights`, {
+        headers: authHeadersRef.current,
+        params: {
+          page: 1,
+          page_size: 5
+        }
+      });
+
+      const mapped = (response.data?.items || []).map((item, index) => ({
+        id: index + 1,
+        tag: item.category?.toUpperCase() || 'GERAL',
+        title: item.title,
+        description: item.text,
+        icon: 'bulb-outline',
+      }));
+
+      setInsights(mapped);
+      setInsightsModalOpen(true);
+
+    } catch (err) {
+      console.error('Erro ao buscar insights:', err.response?.data || err.message);
+      setInsightsModalOpen(true);
+    } finally {
+      setInsightsLoading(false);
+    }
   }
 
   return (
@@ -273,7 +296,11 @@ export default function Finances() {
               ]}
               onPress={handleOpenInsights}
             >
-              <Ionicons name="bulb-outline" size={24} color="#FFC107" />
+              {insightsLoading ? (
+                <ActivityIndicator size="small" color="#FFC107" />
+              ) : (
+                <Ionicons name="bulb-outline" size={24} color="#ffbf00" />
+              )}
             </Pressable>
             <Pressable
               style={({ pressed }) => [

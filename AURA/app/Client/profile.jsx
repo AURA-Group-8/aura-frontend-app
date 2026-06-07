@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar, Pressable, Modal, TextInput } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar, Pressable, Modal, TextInput, Image } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useState, useEffect, useRef } from 'react'
 import Ionicons from '@expo/vector-icons/Ionicons'
@@ -8,6 +8,7 @@ import axios from 'axios'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import Navbar from './_Component/Navbar'
 import CardPopUp from './_Component/card-popUp'
+import CameraModal from './_Component/CameraModal'
 
 export default function Profile() {
   const router = useRouter()
@@ -16,6 +17,8 @@ export default function Profile() {
   const [error, setError] = useState(null)
   const [settingsModalVisible, setSettingsModalVisible] = useState(false)
   const [updating, setUpdating] = useState(false)
+  const [cameraModalVisible, setCameraModalVisible] = useState(false)
+  const [profilePhoto, setProfilePhoto] = useState(null)
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -71,6 +74,44 @@ export default function Profile() {
     fetchUserData()
   }, [])
 
+  // Carregar foto de perfil salva
+  useEffect(() => {
+    const loadProfilePhoto = async () => {
+      try {
+        const savedPhotoUri = await AsyncStorage.getItem('profilePhotoUri')
+        if (savedPhotoUri) {
+          // Apenas tenta usar o URI diretamente
+          // Se o arquivo não existir, o Image component vai tratar silenciosamente
+          setProfilePhoto(savedPhotoUri)
+        }
+      } catch (error) {
+        console.error('Erro ao carregar foto de perfil:', error)
+        setProfilePhoto(null)
+      }
+    }
+
+    loadProfilePhoto()
+  }, [])
+
+  // Função para lidar com foto capturada
+  const handlePhotoCapture = async (photo) => {
+    try {
+      // Salvar o URI da foto no AsyncStorage
+      await AsyncStorage.setItem('profilePhotoUri', photo.uri)
+      setProfilePhoto(photo.uri)
+      
+      setPopupMessage('Foto de perfil atualizada com sucesso!')
+      setPopupType('success')
+      setPopupVisible(true)
+    } catch (error) {
+      console.error('Erro ao salvar foto de perfil:', error)
+      setPopupMessage('Erro ao salvar a foto de perfil')
+      setPopupType('error')
+      setPopupVisible(true)
+    }
+  }
+
+  // Função para formatar telefone
   const formatPhone = (text) => {
     const cleaned = text.replace(/\D/g, '')
     
@@ -90,13 +131,10 @@ export default function Profile() {
 
   const handleSignOut = async () => {
     try {
-      await AsyncStorage.multiRemove([
-        'token',
-        'userId',
-        'userName',
-        'userRole',
-        'appLanguage',
-      ])
+      // Limpar dados do AsyncStorage
+      await AsyncStorage.removeItem('token')
+      await AsyncStorage.removeItem('userId')
+      await AsyncStorage.removeItem('profilePhotoUri')
       
       router.replace('/Auth/login')
     } catch (error) {
@@ -200,9 +238,20 @@ export default function Profile() {
 
         {/* Card de perfil */}
         <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Ionicons name="person-outline" size={32} color="#6B3A3A" />
-          </View>
+          <TouchableOpacity 
+            style={styles.avatar}
+            onPress={() => setCameraModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            {profilePhoto ? (
+              <Image source={{ uri: profilePhoto }} style={styles.avatarImage} />
+            ) : (
+              <Ionicons name="person-outline" size={32} color="#6B3A3A" />
+            )}
+            <View style={styles.cameraIconContainer}>
+              <Ionicons name="camera" size={16} color="#FFFFFF" />
+            </View>
+          </TouchableOpacity>
           <View style={styles.profileInfo}>
             {loading ? (
               <Text style={styles.loadingText}>Carregando...</Text>
@@ -409,6 +458,13 @@ export default function Profile() {
         </View>
       </Modal>
 
+      {/* Modal de câmera */}
+      <CameraModal 
+        visible={cameraModalVisible}
+        onClose={() => setCameraModalVisible(false)}
+        onPhotoCapture={handlePhotoCapture}
+      />
+
       <CardPopUp
         visible={popupVisible}
         type={popupType}
@@ -472,6 +528,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8E2DB',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 32,
+  },
+  cameraIconContainer: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#982546',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   profileInfo: {
     flex: 1,
