@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native'
 import axios from 'axios'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-export default function TimeSelectionComponent({ selectedDate, selectedJob, selectedTime, setSelectedTime }) {
+export default function TimeSelectionComponent({ selectedDate, selectedJobs = [], selectedTime, setSelectedTime }) {
     const [availableTimes, setAvailableTimes] = useState([])
     const authHeadersRef = useRef({})
     const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
@@ -43,12 +43,11 @@ export default function TimeSelectionComponent({ selectedDate, selectedJob, sele
 
     useEffect(() => {
         loadAvailableTimes()
-    }, [selectedDate, selectedJob])
+    }, [selectedDate, selectedJobs])
 
     async function loadAvailableTimes() {
-        const duration = selectedJob?.expectedDurationMinutes ?? 30
-       
-        const times = await getAvailableTimes(duration)
+        const totalDuration = selectedJobs.reduce((sum, job) => sum + (job?.expectedDurationMinutes ?? 30), 0)
+        const times = await getAvailableTimes(totalDuration)
         setAvailableTimes(times)
         setSelectedTime(null)
     }
@@ -80,11 +79,22 @@ export default function TimeSelectionComponent({ selectedDate, selectedJob, sele
         return raw.endsWith(':00') ? raw.slice(0, -3) : raw
     }
 
-    if (!selectedJob) return null
+    const formatDuration = (minutes) => {
+        const hours = Math.floor(minutes / 60)
+        const mins = minutes % 60
+        return mins > 0 ? `${hours}h ${String(mins).padStart(2, '0')}m` : `${hours}h`
+    }
+
+    const totalDuration = selectedJobs.reduce((sum, job) => sum + (job?.expectedDurationMinutes ?? 30), 0)
+
+    if (selectedJobs.length === 0) return null
 
     return (
         <View style={styles.timesCard}>
-            <Text style={styles.timesTitle}>Selecione o horário</Text>
+            <View style={styles.timesHeader}>
+                <Text style={styles.timesTitle}>Selecione o horário</Text>
+                <Text style={styles.durationInfo}>Duração: {formatDuration(totalDuration)}</Text>
+            </View>
             <View style={styles.timesGrid}>
                 {selectedDaySlots.length > 0 ? (
                     selectedDaySlots.map((time, index) => {
@@ -130,11 +140,24 @@ const styles = StyleSheet.create({
         shadowRadius: 25,
         elevation: 6,
     },
+    timesHeader: {
+        marginBottom: 16,
+    },
     timesTitle: {
         fontSize: 16,
         fontWeight: '700',
         color: '#281111',
-        marginBottom: 16,
+        marginBottom: 8,
+    },
+    durationInfo: {
+        fontSize: 13,
+        color: '#7a3b45',
+        fontWeight: '500',
+        backgroundColor: '#fff3dc',
+        paddingVertical: 6,
+        paddingHorizontal: 10,
+        borderRadius: 8,
+        alignSelf: 'flex-start',
     },
     timesGrid: {
         flexDirection: 'row',

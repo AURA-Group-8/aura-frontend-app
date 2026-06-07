@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { styles } from '../../styles/styles';
 import { Text, View, Image, Pressable, TextInput, StyleSheet, Keyboard } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,10 +13,15 @@ import {
   Platform,
   TouchableWithoutFeedback
 } from 'react-native';
+import { LanguageContext } from '../../contexts/LanguageContext';
+import { getTranslation } from '../../translations/translations';
 
 export default function Login() {
   let token = null;
   const router = useRouter();
+  const { language, changeLanguage } = useContext(LanguageContext);
+  const t = (key) => getTranslation(language, 'login', key);
+
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [buttonHovered, setButtonHovered] = useState(false);
@@ -25,6 +30,7 @@ export default function Login() {
 
   const [emailError, setEmailError] = useState('');
   const [senhaError, setSenhaError] = useState('');
+  const [senhaVisible, setSenhaVisible] = useState(false);
 
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -37,20 +43,20 @@ export default function Login() {
     let hasError = false;
 
     if (!email.trim()) {
-      setEmailError('Email é obrigatório');
+      setEmailError(t('emailRequired'));
       hasError = true;
     } else if (!email.includes('@') || !email.includes('.')) {
-      setEmailError('Email inválido');
+      setEmailError(t('emailInvalid'));
       hasError = true;
     } else {
       setEmailError('');
     }
 
     if (!senha.trim()) {
-      setSenhaError('Senha é obrigatória');
+      setSenhaError(t('passwordRequired'));
       hasError = true;
     } else if (senha.length < 6) {
-      setSenhaError('Senha deve ter pelo menos 6 dígitos');
+      setSenhaError(t('passwordShort'));
       hasError = true;
     } else {
       setSenhaError('');
@@ -88,7 +94,7 @@ export default function Login() {
           const userData = userResponse.data;
 
           if (userData.role.id === 1) {
-            setPopupMessage('Login realizado com sucesso!');
+            setPopupMessage(t('loginSuccess'));
             setPopupType('success');
             setPopupVisible(true);
 
@@ -97,7 +103,7 @@ export default function Login() {
               setIsLoading(false);
             }, 1500);
           } else {
-            setPopupMessage('Login realizado com sucesso!');
+            setPopupMessage(t('loginSuccess'));
             setPopupType('success');
             setPopupVisible(true);
 
@@ -107,14 +113,14 @@ export default function Login() {
             }, 1500);
           }
         } else {
-          setPopupMessage('Erro ao realizar login. Tente novamente.');
+          setPopupMessage(t('loginError'));
           setPopupType('error');
           setPopupVisible(true);
           setIsLoading(false);
         }
       } catch (error) {
         console.error('Erro no login:', error);
-        setPopupMessage('Erro ao realizar login. Tente novamente.');
+        setPopupMessage(t('loginError'));
         setPopupType('error');
         setPopupVisible(true);
         setIsLoading(false);
@@ -146,15 +152,41 @@ export default function Login() {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <LinearGradient
-          colors={['#4f1223', '#8a1c3a']}
-          style={{ flex: 1 }}
-        >
-          <Pressable onPress={() => router.back()} style={localStyles.backButton}>
-              <Ionicons name="chevron-back" size={30} color="#FFF3DC" />
-            </Pressable>
+      <LinearGradient
+        colors={['#4f1223', '#8a1c3a']}
+        style={{ flex: 1 }}
+      >
+        <View style={{ flex: 1 }}>
+          <Pressable onPress={() => router.replace('/')} style={localStyles.backButton} pointerEvents="auto">
+            <Ionicons name="chevron-back" size={30} color="#FFF3DC" />
+          </Pressable>
 
+          <View style={localStyles.languageSelector} pointerEvents="auto">
+            <Pressable
+              onPress={() => changeLanguage('pt')}
+              style={[
+                localStyles.languageBtnPT,
+                language === 'pt' && localStyles.languageBtnActive
+              ]}
+            >
+              <Text style={[
+                localStyles.languageText,
+                language === 'pt' && localStyles.languageTextActive
+              ]}>PT</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => changeLanguage('en')}
+              style={[
+                localStyles.languageBtnEN,
+                language === 'en' && localStyles.languageBtnActive
+              ]}
+            >
+              <Text style={[
+                localStyles.languageText,
+                language === 'en' && localStyles.languageTextActive
+              ]}>EN</Text>
+            </Pressable>
+          </View>
           <ScrollView
             contentContainerStyle={{
               flexGrow: 1,
@@ -165,7 +197,7 @@ export default function Login() {
             }}
             keyboardShouldPersistTaps="handled"
           >
-            
+
             {!keyboardVisible && (
               <Image
                 source={require('../../assets/AURA.png')}
@@ -178,10 +210,10 @@ export default function Login() {
             )}
 
             <View style={{ width: '100%', alignItems: 'center' }}>
-              <Text style={styles.titulo}>Login</Text>
+              <Text style={styles.titulo}>{t('title')}</Text>
 
               <TextInput
-                placeholder="Email"
+                placeholder={t('email')}
                 placeholderTextColor="#FFF3DC80"
                 value={email}
                 onChangeText={setEmail}
@@ -189,20 +221,32 @@ export default function Login() {
               />
               {emailError ? <Text style={localStyles.error}>{emailError}</Text> : null}
 
-              <TextInput
-                placeholder="Senha"
-                placeholderTextColor="#FFF3DC80"
-                value={senha}
-                onChangeText={setSenha}
-                secureTextEntry
-                style={localStyles.input}
-              />
+              <View style={localStyles.inputContainer}>
+                <TextInput
+                  placeholder={t('password')}
+                  placeholderTextColor="#FFF3DC80"
+                  value={senha}
+                  onChangeText={setSenha}
+                  secureTextEntry={!senhaVisible}
+                  style={localStyles.input}
+                />
+                <Pressable
+                  onPress={() => setSenhaVisible(!senhaVisible)}
+                  style={localStyles.eyeIcon}
+                >
+                  <Ionicons
+                    name={senhaVisible ? 'eye' : 'eye-off'}
+                    size={24}
+                    color="#FFF3DC"
+                  />
+                </Pressable>
+              </View>
               {senhaError ? <Text style={localStyles.error}>{senhaError}</Text> : null}
 
               <Text style={localStyles.Textlink}>
-                Não tem uma conta?{' '}
-                <Text style={localStyles.link} onPress={() => router.push('/Auth/signUp')}>
-                  Cadastre-se
+                {t('noAccount')}{' '}
+                <Text style={localStyles.link} onPress={() => router.replace('/Auth/signUp')}>
+                  {t('signUp')}
                 </Text>
               </Text>
               
@@ -237,8 +281,8 @@ export default function Login() {
               />
             </View>
           </ScrollView>
-        </LinearGradient>
-      </TouchableWithoutFeedback>
+        </View>
+      </LinearGradient>
     </KeyboardAvoidingView>
   );
 }
@@ -256,6 +300,45 @@ const localStyles = StyleSheet.create({
     zIndex: 10,
     padding: 10,
   },
+  languageSelector: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 100,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  languageBtnPT: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#FFF3DC',
+    backgroundColor: 'transparent',
+  },
+  languageBtnEN: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#FFF3DC',
+    backgroundColor: 'transparent',
+  },
+  languageBtnActive: {
+    backgroundColor: '#FFF3DC',
+  },
+  languageText: {
+    color: '#FFF3DC',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  languageTextActive: {
+    color: '#5c0f25',
+  },
+  inputContainer: {
+    position: 'relative',
+    width: 300,
+  },
   input: {
     backgroundColor: '#5c0f25',
     color: '#FFF3DC',
@@ -263,9 +346,15 @@ const localStyles = StyleSheet.create({
     borderColor: '#FFF3DC',
     width: 300,
     padding: 12,
+    paddingRight: 45,
     borderRadius: 20,
     fontWeight: '500',
     marginBottom: 20,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
   },
   error: {
     color: '#fa8585',

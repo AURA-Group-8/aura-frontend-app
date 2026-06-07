@@ -1,7 +1,6 @@
 import { View, Pressable, Text, StyleSheet } from 'react-native'
 import { useRouter } from 'expo-router'
-import Ionicons from '@expo/vector-icons/Ionicons'
-import AntDesign from '@expo/vector-icons/AntDesign'
+import { Ionicons, AntDesign } from '@expo/vector-icons'
 
 export default function Navbar() {
 
@@ -15,6 +14,10 @@ export default function Navbar() {
 
       <Pressable style={styles.navItem} onPress={() => router.replace('/Client/history')}>
         <AntDesign name="clock-circle" size={28} color="#982546" />
+      </Pressable>
+
+      <Pressable style={styles.navItem} onPress={() => router.replace('/Client/maps')}>
+        <Ionicons name="map-outline" size={28} color="#982546" />
       </Pressable>
 
       <Pressable style={styles.navItem} onPress={() => router.replace('/Client/profile')}>

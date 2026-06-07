@@ -18,30 +18,51 @@ export default function SchedulesClient() {
   const [sortBy, setSortBy] = useState('id');
   const [direction, setDirection] = useState('ASC');
   const [filterType, setFilterType] = useState('todos')
-  const [userIdRef, setUserIdRef] = useState(null);  const [userNameRef, setUserNameRef] = useState(null);  const authHeadersRef = useRef({})
+  const userIdRef = useRef(null);
+  const userNameRef = useRef(null);
+  const authHeadersRef = useRef({});
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
-
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      NavigationBar.setVisibilityAsync("hidden");
-      NavigationBar.setBehaviorAsync("overlay-swipe");
-    }
-    if (!userIdRef || !userNameRef) return;
-    
-    getSchedules();
-  }, [page, size, sortBy, direction, userIdRef, userNameRef]);
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     const init = async () => {
       const token = await AsyncStorage.getItem('token')
       const userId = await AsyncStorage.getItem('userId')
       const userName = await AsyncStorage.getItem('userName')
+
       authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
-      setUserIdRef(userId)
-      setUserNameRef(userName)
+      userIdRef.current = userId
+      userNameRef.current = userName
+
+      setReady(true)
     }
-    init();
-  }, []);
+
+    init()
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
+    const setup = async () => {
+      if (!ready || !isMounted) return
+
+      if (Platform.OS === 'android') {
+        try {
+          await NavigationBar.setVisibilityAsync('hidden')
+        } catch (e) {
+          console.log('NavBar error ignored:', e)
+        }
+      }
+
+      getSchedules()
+    }
+
+    setup()
+
+    return () => {
+      isMounted = false
+    }
+  }, [ready, page, size, sortBy, direction])
 
   const router = useRouter();
 
@@ -84,10 +105,10 @@ export default function SchedulesClient() {
         prev.map((schedule) =>
           schedule.id === scheduleId
             ? {
-                ...schedule,
-                status: updatedFields.status?.toUpperCase() || schedule.status,
-                paymentStatus: updatedFields.paymentStatus?.toUpperCase() || schedule.paymentStatus,
-              }
+              ...schedule,
+              status: updatedFields.status?.toUpperCase() || schedule.status,
+              paymentStatus: updatedFields.paymentStatus?.toUpperCase() || schedule.paymentStatus,
+            }
             : schedule
         )
       )
@@ -106,26 +127,26 @@ export default function SchedulesClient() {
 
   async function cancelSchedule(scheduleId, mensagem) {
     try {
-      
+
       if (!scheduleId) {
         throw new Error('ID do agendamento não informado')
       }
-      
+
       if (!mensagem || mensagem.trim() === '') {
         throw new Error('Motivo do cancelamento é obrigatório')
       }
 
-      if (!token) {
-        throw new Error('Token de autenticação não encontrado')
-      }
-      
-      const response = await axios.delete(`${API_URL}/api/agendamentos/${scheduleId}`, {
-        headers: authHeadersRef.current,
-        params: {
-          message: mensagem.trim(),
-        },
-      })
-      
+
+      const response = await axios.delete(
+        `${API_URL}/api/agendamentos/${scheduleId}`,
+        {
+          headers: authHeadersRef.current,
+          params: {
+            message: mensagem.trim(),
+          },
+        }
+      )
+
       console.log('✅ Agendamento deletado com sucesso')
 
       setAgendamentos((prev) =>
@@ -163,9 +184,8 @@ export default function SchedulesClient() {
           ? responseData
           : [];
 
-      // Filtrar agendamentos apenas do usuário logado por userName
-      const userSchedules = content.filter((agendamento) => 
-        String(agendamento.userName).toLowerCase() === String(userNameRef).toLowerCase()
+      const userSchedules = content.filter((agendamento) =>
+        String(agendamento.userName).toLowerCase() === String(userNameRef.current).toLowerCase()
       );
 
       const formattedSchedules = userSchedules.map((agendamento) => ({
@@ -180,21 +200,26 @@ export default function SchedulesClient() {
         feedback: agendamento.feedback,
       }));
 
-      const sortedSchedules = formattedSchedules.sort((a, b) => {
+      const activeSchedules = formattedSchedules.filter((agendamento) => {
+        const status = String(agendamento.status).trim().toUpperCase();
+        return status !== 'FEITO' && status !== 'CANCELADO';
+      });
+
+      const sortedSchedules = activeSchedules.sort((a, b) => {
         const aIsPending = a.status === 'PENDENTE'
         const bIsPending = b.status === 'PENDENTE'
-        
+
         if (aIsPending !== bIsPending) {
           return aIsPending ? -1 : 1
         }
 
         const aDate = new Date(a.startDatetime || 0)
         const bDate = new Date(b.startDatetime || 0)
-        
+
         return aDate - bDate
       })
 
-    
+
       setAgendamentos(sortedSchedules);
       setTotalPages(responseData.totalPages ?? 1);
       setTotalItems(userSchedules.length);
@@ -343,13 +368,10 @@ export default function SchedulesClient() {
 
         {getFilteredSchedules().length > 0 ? (
           getFilteredSchedules().map((item) => (
-            <CardSchedule 
-              key={item.id} 
+            <CardSchedule
+              key={item.id}
               schedule={item}
-              showActions={
-                !['FEITO', 'CANCELADO'].includes(
-                  String(item.status).trim().toUpperCase()
-                )}
+              isClient={true}
               onCancelSchedule={cancelSchedule}
               onUpdateSchedule={updateSchedule}
               onRefresh={getSchedules}
@@ -385,7 +407,7 @@ export default function SchedulesClient() {
         </View>
       </ScrollView>
 
-      <Navbar/>
+      <Navbar />
 
     </View>
 

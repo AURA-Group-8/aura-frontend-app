@@ -16,7 +16,7 @@ export default function NewScheduleClient() {
     const [visibleMonth, setVisibleMonth] = useState(today.getMonth())
     const [visibleYear, setVisibleYear] = useState(today.getFullYear())
     const [selectedTime, setSelectedTime] = useState(null)
-    const [selectedJob, setSelectedJob] = useState(null)
+    const [selectedJobs, setSelectedJobs] = useState([])
 
     return (
         <View style={styles.page}>
@@ -37,11 +37,11 @@ export default function NewScheduleClient() {
                     setVisibleYear={setVisibleYear}
                 />
 
-                <ServiceListComponent selectedJob={selectedJob} setSelectedJob={setSelectedJob} />
+                <ServiceListComponent selectedJobs={selectedJobs} setSelectedJobs={setSelectedJobs} />
 
                 <TimeSelectionComponent
                     selectedDate={selectedDate}
-                    selectedJob={selectedJob}
+                    selectedJobs={selectedJobs}
                     selectedTime={selectedTime}
                     setSelectedTime={setSelectedTime}
                 />
@@ -49,7 +49,7 @@ export default function NewScheduleClient() {
                 <SummaryCardComponent
                     selectedDate={selectedDate}
                     selectedTime={selectedTime}
-                    selectedJob={selectedJob}
+                    selectedJobs={selectedJobs}
                 />
             </ScrollView>
 

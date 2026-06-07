@@ -15,9 +15,9 @@ import axios from 'axios'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export default function ClientesScreen() {
-  const [clientes, setClientes] = useState([]) // Lista completa do banco
-  const [filteredClientes, setFilteredClientes] = useState([]) // Lista que aparece na tela
-  const [searchText, setSearchText] = useState('') // Texto da busca
+  const [clientes, setClientes] = useState([]) 
+  const [filteredClientes, setFilteredClientes] = useState([]) 
+  const [searchText, setSearchText] = useState('') 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   
@@ -41,14 +41,14 @@ export default function ClientesScreen() {
     try {
       setLoading(true)
       setError(null)
-      setSearchText('') // Limpa a busca ao recarregar do banco
+      setSearchText('') 
       
       const response = await axios.get(`${API_URL}/api/usuarios`, {
         headers: authHeadersRef.current,
       })
 
       setClientes(response.data) 
-      setFilteredClientes(response.data) // Inicializa a lista filtrada com todos os dados
+      setFilteredClientes(response.data) 
       
     } catch (err) {
       console.error('❌ Erro ao buscar clientes:', err)
@@ -59,10 +59,10 @@ export default function ClientesScreen() {
     }
   }
 
-  // Função para filtrar a lista localmente
+ 
   const handleFilter = () => {
     if (searchText.trim() === '') {
-      setFilteredClientes(clientes) // Se a busca estiver vazia, mostra todos
+      setFilteredClientes(clientes) 
       return
     }
 
@@ -82,15 +82,13 @@ export default function ClientesScreen() {
             placeholder="Buscar cliente..."
             style={styles.input}
             value={searchText}
-            onChangeText={setSearchText} // Atualiza o texto enquanto digita
+            onChangeText={setSearchText} 
           />
           
-          {/* Botão de Confirmar Busca */}
           <TouchableOpacity style={styles.actionButton} onPress={handleFilter}>
             <Ionicons name="search" size={20} color="#7a4b4b" />
           </TouchableOpacity>
 
-          {/* Botão de Recarregar do Banco */}
           <TouchableOpacity style={styles.actionButton} onPress={fetchClientes}>
             <Ionicons name="refresh" size={20} color="#7a4b4b" />
           </TouchableOpacity>
@@ -103,7 +101,7 @@ export default function ClientesScreen() {
         ) : (
           <View style={{ flex: 1 }}>
             <FlatList
-              data={filteredClientes} // Agora usamos a lista filtrada no FlatList
+              data={filteredClientes} 
               keyExtractor={(item) => item.id.toString()}
               renderItem={({ item }) => {
                 return (

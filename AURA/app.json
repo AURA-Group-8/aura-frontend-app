@@ -3,10 +3,10 @@
     "name": "agendamento-app",
     "slug": "agendamento-app",
     "version": "1.0.0",
+    "scheme": "agendamento",
     "orientation": "portrait",
     "icon": "./assets/AURA.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/AURA.png",
       "resizeMode": "contain",
@@ -16,19 +16,34 @@
       "supportsTablet": true
     },
     "android": {
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/AURA.png",
-        "backgroundColor": "#ffffff",
-        "softwareKeyboardLayoutMode": "resize"
-    
+        "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET"
+      ],
+      "package": "com.anonymous.agendamentoapp"
     },
     "web": {
       "favicon": "./assets/AURA.png"
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/AURA.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
       [
         "expo-file-system",
         {
