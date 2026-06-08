@@ -4,14 +4,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import axios from 'axios'
 
 export default function TimeSelectionComponent({ selectedDate, selectedJobs, selectedTime, setSelectedTime }) {
-    const [availableTimes, setAvailableTimes] = useState([]) 
+    const [availableTimes, setAvailableTimes] = useState([])
+    const [isTokenReady, setIsTokenReady] = useState(false)
     const authHeadersRef = useRef({})
     const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
 
     useEffect(() => {
         const init = async () => {
-            const token = await AsyncStorage.getItem('token')
-            authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
+            try {
+                const token = await AsyncStorage.getItem('token')
+                authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
+                console.log('✅ Token carregado:', token ? 'Sim' : 'Não')
+                setIsTokenReady(true)
+            } catch (error) {
+                console.error('Erro ao carregar token:', error)
+                setIsTokenReady(true) // Mesmo com erro, marca como pronto
+            }
         }
         init()
     }, [])
@@ -42,8 +50,9 @@ export default function TimeSelectionComponent({ selectedDate, selectedJobs, sel
     }, [availableTimes, selectedDate])
 
     useEffect(() => {
+        if (!isTokenReady) return
         loadAvailableTimes()
-    }, [selectedDate, selectedJobs])
+    }, [selectedDate, selectedJobs, isTokenReady])
 
     async function loadAvailableTimes() {
         if (authHeadersRef.current && Object.keys(authHeadersRef.current).length === 0) return
@@ -63,6 +72,8 @@ export default function TimeSelectionComponent({ selectedDate, selectedJobs, sel
             firstDayOfWeek.setDate(firstDayOfWeek.getDate() + mondayOffset)
             const dateString = firstDayOfWeek.toISOString().split('T')[0]
 
+            console.log('📅 Buscando horários:', { durationInMinutes, firstDayOfWeek: dateString })
+
             const response = await axios.get(`${API_URL}/api/agendamentos/available-times`, {
                 headers: authHeadersRef.current,
                 params: {
@@ -70,9 +81,13 @@ export default function TimeSelectionComponent({ selectedDate, selectedJobs, sel
                     firstDayOfWeek: dateString,
                 },
             })
+            console.log('✅ Horários encontrados:', response.data?.length || 0)
             return response.data
         } catch (error) {
-            console.error('Erro ao buscar horários disponíveis:', error)
+            console.error('❌ Erro ao buscar horários disponíveis:')
+            console.error('   Status:', error.response?.status)
+            console.error('   Mensagem:', error.response?.data?.message || error.message)
+            console.error('   Erro:', error.message)
             return []
         }
     }

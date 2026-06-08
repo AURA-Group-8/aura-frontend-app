@@ -4,6 +4,7 @@ import { WebView } from 'react-native-webview'
 import * as Location from 'expo-location'
 import { useRouter } from 'expo-router'
 import Ionicons from '@expo/vector-icons/Ionicons'
+import Navbar from './_Component/Navbar'
 
 export default function MapScreen() {
   const [userLocation, setUserLocation] = useState(null)
@@ -21,10 +22,14 @@ export default function MapScreen() {
 
    const getUserLocation = async () => {
     try {
+      console.log('📍 Iniciando busca de localização do dispositivo...')
+      
       const isLocationEnabled =
         await Location.hasServicesEnabledAsync()
       if (!isLocationEnabled) {
-        console.log('Serviços de localização desativados')
+        console.log('❌ Serviços de localização desativados no dispositivo')
+        alert('Por favor, ative os serviços de localização')
+        setIsLoading(false)
         return
       }
 
@@ -32,29 +37,37 @@ export default function MapScreen() {
         await Location.requestForegroundPermissionsAsync()
 
       if (status !== 'granted') {
-        console.log('Permissão negada')
+        console.log('❌ Permissão de localização negada pelo usuário')
+        alert('Permissão de localização é necessária para usar este recurso')
+        setIsLoading(false)
         return
       }
 
+      console.log('✅ Permissão de localização concedida')
+      
       const location = await Location.getCurrentPositionAsync({
-
         accuracy: Location.Accuracy.High,
         timeout: 15000,
+        maximumAge: 5000,
       })
 
-      console.log('LAST LOCATION:')
+      console.log('🎯 LOCALIZAÇÃO DO DISPOSITIVO OBTIDA:')
 
       const userCoords = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       }
 
-      console.log('✓ Localização obtida:', userCoords)
+      console.log('✓ Latitude:', userCoords.latitude)
+      console.log('✓ Longitude:', userCoords.longitude)
+      console.log('✓ Precisão:', location.coords.accuracy, 'metros')
+      
       setUserLocation(userCoords)
-
       getRoute(userCoords)
     } catch (error) {
-      console.log('Erro ao obter localização:', error)
+      console.log('❌ Erro ao obter localização:', error.message)
+      alert('Erro ao obter sua localização. Tente novamente.')
+      setIsLoading(false)
     }
   }
 
@@ -86,15 +99,41 @@ export default function MapScreen() {
 
   const getRoute = async (userCoords) => {
     try {
-
       console.log('Obtendo rota de:', userCoords, 'para:', clinicLocation)
+      
+      // Calcula distância aproximada entre os pontos (em metros) usando Haversine
+      const R = 6371000; // Raio da Terra em metros
+      const lat1 = (userCoords.latitude * Math.PI) / 180
+      const lat2 = (clinicLocation.latitude * Math.PI) / 180
+      const deltaLat = ((clinicLocation.latitude - userCoords.latitude) * Math.PI) / 180
+      const deltaLon = ((clinicLocation.longitude - userCoords.longitude) * Math.PI) / 180
+      
+      const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+                Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2)
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+      const distanceMeters = R * c
+      
+      console.log('📍 Distância aproximada:', (distanceMeters / 1000).toFixed(1), 'km')
+      
+      // Se a distância for maior que 6000 km, não tenta usar a API
+      if (distanceMeters > 6000000) {
+        console.log('⚠️ Distância muito grande para calcular rota (máximo 6000 km)')
+        // Mostra informações estimadas
+        const estimatedHours = Math.ceil(distanceMeters / 1000 / 80)
+        const routeInfoData = {
+          distance: (distanceMeters / 1000).toFixed(1) + ' km',
+          duration: estimatedHours > 24 ? Math.ceil(estimatedHours / 24) + 'd' : estimatedHours + 'h',
+        }
+        setRouteInfo(routeInfoData)
+        setIsLoading(false)
+        return
+      }
+      
       const response = await fetch(
-        'https://api.openrouteservice.org/v2/directions/driving-car/geojson',
+        'https://api.openrouteservice.org/v2/directions/driving-car/geojson?api_key=5b3ce3597851110001cf6248be6268394fb74574a244f60737fd4276',
         {
           method: 'POST',
           headers: {
-            Authorization:
-              '5b3ce3597851110001cf6248be6268394fb74574a244f60737fd4276',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -108,6 +147,7 @@ export default function MapScreen() {
 
       const data = await response.json()
       console.log('✓ Status da resposta:', response.status)
+      console.log('✓ Resposta completa:', data)
       console.log('✓ Features encontradas:', data.features?.length || 0)
 
       if (data.features && data.features.length > 0) {
@@ -373,22 +413,24 @@ export default function MapScreen() {
       {routeInfo && (
         <View style={styles.routeInfoContainer}>
           <Text style={styles.routeDestination}>Como chegar na clínica</Text>
-          <Text style={styles.routeDetailItem}>
-            <Text style={styles.routeDetailIcon}>📍</Text>
-            <Text style={styles.routeDetailText}>Rua Augusta, 1389 - Consolação, SP</Text>
-          </Text>
+          <View style={styles.routeAddressContainer}>
+            <Ionicons name="location" size={20} color="#EA4335" style={styles.addressIcon} />
+            <Text style={styles.routeAddressText}>Rua Augusta, 1389 - Consolação, SP</Text>
+          </View>
           <View style={styles.routeDetailsRow}>
             <View style={styles.routeDetailItem}>
-              <Text style={styles.routeDetailIcon}>⏱</Text>
+              <Ionicons name="time-outline" size={24} color="#666" />
               <Text style={styles.routeDetailText}>{routeInfo.duration}</Text>
             </View>
+            <View style={styles.routeDivider} />
             <View style={styles.routeDetailItem}>
-              <Text style={styles.routeDetailIcon}>📍</Text>
+              <Ionicons name="location-outline" size={24} color="#EA4335" />
               <Text style={styles.routeDetailText}>{routeInfo.distance}</Text>
             </View>
           </View>
         </View>
       )}
+      <Navbar active="Localização" />
     </View>
   )
 }
@@ -474,15 +516,39 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     marginBottom: 12,
   },
+  routeAddressContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  addressIcon: {
+    marginRight: 10,
+    marginTop: 2,
+  },
+  routeAddressText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    flex: 1,
+  },
   routeDetailsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-
+    alignItems: 'center',
+  },
+  routeDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#f0f0f0',
   },
   routeDetailItem: {
+    flex: 1,
     flexDirection: 'column',
     alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'center',
   },
   routeDetailIcon: {
     fontSize: 24,
@@ -492,5 +558,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#424242',
+    marginTop: 4,
   },
 })

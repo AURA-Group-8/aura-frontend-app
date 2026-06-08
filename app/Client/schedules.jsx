@@ -441,7 +441,7 @@ export default function SchedulesClient() {
         </Pressable>
       </View>
 
-      <Navbar />
+      <Navbar active="Agendamentos" />
 
     </View>
 

@@ -121,7 +121,7 @@ export default function MaisScreen() {
                 <Text style={styles.version}>AURA v1.0.0</Text>
             </View>
 
-            <NavbarPro active="more" />
+            <NavbarPro active="Mais" />
         </View>
     )
 }

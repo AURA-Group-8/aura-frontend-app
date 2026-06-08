@@ -7,6 +7,7 @@ import TimeSelectionComponent from './_Components/TimeSelectionComponent'
 import ServiceListComponent from './_Components/ServiceListComponent'
 import ClientListComponent from './_Components/ClientListComponent'
 import SummaryCardComponent from './_Components/SummaryCardComponent'
+import NavbarPro from './_Components/NavbarPro'
 
 export default function NewSchedule() {
     const router = useRouter()
@@ -19,46 +20,53 @@ export default function NewSchedule() {
     const [selectedJobs, setSelectedJobs] = useState([])
 
     return (
-        <ScrollView style={styles.page} contentContainerStyle={styles.content}>
-            <View style={styles.topBar}>
-                <Pressable style={styles.backButton} onPress={() => router.replace('/Professional/schedules-home')}>
-                    <Ionicons name="chevron-back" size={26} color="#281111" />
-                </Pressable>
-                <Text style={styles.pageTitle}>Selecione a data</Text>
-            </View>
+        <View style={styles.container}>
+            <ScrollView style={styles.page} contentContainerStyle={styles.content}>
+                <View style={styles.topBar}>
+                    <Pressable style={styles.backButton} onPress={() => router.back()}>
+                        <Ionicons name="chevron-back" size={26} color="#281111" />
+                    </Pressable>
+                    <Text style={styles.pageTitle}>Selecione a data</Text>
+                </View>
 
-            <CalendarComponent
-                selectedDate={selectedDate}
-                setSelectedDate={setSelectedDate}
-                visibleMonth={visibleMonth}
-                setVisibleMonth={setVisibleMonth}
-                visibleYear={visibleYear}
-                setVisibleYear={setVisibleYear}
-            />
+                <CalendarComponent
+                    selectedDate={selectedDate}
+                    setSelectedDate={setSelectedDate}
+                    visibleMonth={visibleMonth}
+                    setVisibleMonth={setVisibleMonth}
+                    visibleYear={visibleYear}
+                    setVisibleYear={setVisibleYear}
+                />
 
-            <ServiceListComponent selectedJobs={selectedJobs} setSelectedJobs={setSelectedJobs} />
+                <ServiceListComponent selectedJobs={selectedJobs} setSelectedJobs={setSelectedJobs} />
 
-            <TimeSelectionComponent
-                selectedDate={selectedDate}
-                selectedJobs={selectedJobs}
-                selectedTime={selectedTime}
-                setSelectedTime={setSelectedTime}
-            />
+                <TimeSelectionComponent
+                    selectedDate={selectedDate}
+                    selectedJobs={selectedJobs}
+                    selectedTime={selectedTime}
+                    setSelectedTime={setSelectedTime}
+                />
 
-            <ClientListComponent selectedClient={selectedClient} setSelectedClient={setSelectedClient} />
+                <ClientListComponent selectedClient={selectedClient} setSelectedClient={setSelectedClient} />
 
-            <SummaryCardComponent
-                selectedDate={selectedDate}
-                selectedTime={selectedTime}
-                selectedClient={selectedClient}
-                selectedJobs={selectedJobs}
-                onSuccessCallback={() => router.replace('/Professional/schedules-home')}
-            />
-        </ScrollView>
+                <SummaryCardComponent
+                    selectedDate={selectedDate}
+                    selectedTime={selectedTime}
+                    selectedClient={selectedClient}
+                    selectedJobs={selectedJobs}
+                    onSuccessCallback={() => router.replace('/Professional/schedules-home')}
+                />
+            </ScrollView>
+            <NavbarPro active="Agenda" />
+        </View>
     )
 }
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#f5ead8',
+    },
     page: {
         flex: 1,
         backgroundColor: '#f5ead8',
@@ -72,6 +80,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 16,
         marginBottom: 20,
+        marginTop: 10,
+
     },
     backButton: {
         width: 40,

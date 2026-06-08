@@ -2,27 +2,41 @@ import { View, Pressable, Text, StyleSheet } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons, AntDesign } from '@expo/vector-icons'
 
-export default function Navbar() {
+const navItems = [
+  { label: 'Agendamentos', icon: 'schedule', route: '/Client/schedules', iconType: 'AntDesign' },
+  { label: 'Histórico', icon: 'clock-circle', route: '/Client/history', iconType: 'AntDesign' },
+  { label: 'Localização', icon: 'map-outline', route: '/Client/maps', iconType: 'Ionicons' },
+  { label: 'Perfil', icon: 'person-outline', route: '/Client/profile', iconType: 'Ionicons' },
+]
 
-  const router = useRouter();
+export default function Navbar({ active = 'Agendamentos' }) {
+
+  const router = useRouter()
+
+  const handleNavigation = (item) => {
+    router.replace(item.route)
+  }
 
   return (
     <View style={styles.navbar}>
-      <Pressable style={styles.navItem} onPress={() => router.replace('/Client/schedules')}>
-        <AntDesign name="schedule" size={28} color="#982546" />
-      </Pressable>
-
-      <Pressable style={styles.navItem} onPress={() => router.replace('/Client/history')}>
-        <AntDesign name="clock-circle" size={28} color="#982546" />
-      </Pressable>
-
-      <Pressable style={styles.navItem} onPress={() => router.replace('/Client/maps')}>
-        <Ionicons name="map-outline" size={28} color="#982546" />
-      </Pressable>
-
-      <Pressable style={styles.navItem} onPress={() => router.replace('/Client/profile')}>
-        <Ionicons name="person-outline" size={28} color="#982546" />
-      </Pressable>
+      {navItems.map((item) => {
+        const isActive = active === item.label
+        const IconComponent = item.iconType === 'AntDesign' ? AntDesign : Ionicons
+        
+        return (
+          <Pressable 
+            key={item.label} 
+            style={styles.navItem} 
+            onPress={() => handleNavigation(item)}
+          >
+            <IconComponent 
+              name={item.icon} 
+              size={28} 
+              color={isActive ? '#5c0f25' : '#982546'} 
+            />
+          </Pressable>
+        )
+      })}
     </View>
   )
 }

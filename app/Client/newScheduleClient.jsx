@@ -53,7 +53,7 @@ export default function NewScheduleClient() {
                 />
             </ScrollView>
 
-            <Navbar />
+            <Navbar active="Agendamentos" />
         </View>
     )
 }

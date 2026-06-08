@@ -458,7 +458,7 @@ export default function Profile() {
 
       <View>
 
-          <Navbar />
+          <Navbar active="Perfil" />
 
         </View>
     </SafeAreaView>

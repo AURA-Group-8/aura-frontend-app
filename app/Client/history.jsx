@@ -219,7 +219,7 @@ export default function HistoryClient() {
         </Pressable>
       </View>
 
-      <Navbar/>
+      <Navbar active="Histórico" />
 
     </View>
 
@@ -239,8 +239,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 20,
     paddingHorizontal: 20,
-    marginBottom: 20,
-    marginTop: 10,
+    marginBottom: 10,
+    marginTop: 30,
   },
 
   title: {

@@ -7,15 +7,17 @@ import { Platform } from 'react-native'
 import axios from 'axios'
 import NavbarPro from './_Components/NavbarPro'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import BusinessInsightsModal from './_Components/BusinessInsightsModal'
 
 export default function Finances() {
   const [monthlyRevenue, setMonthlyRevenue] = useState('85k')
   const [cancellations, setCancellations] = useState(0)
+  
   const [costs, setCosts] = useState('12k')
-  const [revenueVariation, setRevenueVariation] = useState(12)
-  const [costsVariation, setCostsVariation] = useState(2)
+  const [revenueVariation, setRevenueVariation] = useState(0)
+  const [costsVariation, setCostsVariation] = useState(0)
   const [tkmValue, setTkmValue] = useState('450')
-  const [tkmVariation, setTkmVariation] = useState(5)
+  const [tkmVariation, setTkmVariation] = useState(0)
   const [weeklyData, setWeeklyData] = useState([
     { day: 'Seg', value: 0 },
     { day: 'Ter', value: 0 },
@@ -34,14 +36,9 @@ export default function Finances() {
     { name: 'Mariana Silva', date: 'jan/2024', badge: 'ALERTA' },
     { name: 'Carlos Oliveira', date: '3M', badge: 'INFO' },
   ])
-  const [insights, setInsights] = useState([
-    { text: 'Pico na Quarta. Otimize a escala de recepção.' },
-    { text: 'Botox Lucrativo: Focar em campanhas deste serviço.' },
-    { text: '15 Inativos: Sugerida ação de reengajamento imediata.' },
-  ])
   const [loading, setLoading] = useState(false)
-  const [historyModalOpen, setHistoryModalOpen] = useState(false)
   const [insightsModalOpen, setInsightsModalOpen] = useState(false)
+  const [historyModalOpen, setHistoryModalOpen] = useState(false)
   const [faturamentoPeriodo, setFaturamentoPeriodo] = useState(6)
   const [faturamentoData, setFaturamentoData] = useState([])
   const [agendamentosSemanais, setAgendamentosSemanais] = useState({
@@ -78,10 +75,13 @@ export default function Finances() {
 
       const data = response.data
 
+      console.log('Dados recebidos do resumo:', data)
+
       if (data.tkm !== undefined) {
         setTkmValue(Math.round(data.tkm).toString())
       }
       if (data.percentagem_crescimento_tkm !== undefined) {
+        console.log('TKM Variation:', data.percentagem_crescimento_tkm)
         setTkmVariation(data.percentagem_crescimento_tkm)
       }
 
@@ -94,6 +94,7 @@ export default function Finances() {
         }
       }
       if (data.percentagem_crescimento_receita !== undefined) {
+        console.log('Revenue Variation:', data.percentagem_crescimento_receita)
         setRevenueVariation(data.percentagem_crescimento_receita)
       }
 
@@ -106,6 +107,7 @@ export default function Finances() {
         }
       }
       if (data.percentagem_crescimento_custos !== undefined) {
+        console.log('Costs Variation:', data.percentagem_crescimento_custos)
         setCostsVariation(data.percentagem_crescimento_custos)
       }
     } catch (error) {
@@ -201,9 +203,9 @@ export default function Finances() {
 
       if (Platform.OS === 'android') {
         try {
-          await NavigationBar.setVisibilityAsync('hidden')
+          await NavigationBar.setVisibilityAsync('hidden').catch(() => {})
         } catch (e) {
-          console.log('NavBar error ignored:', e)
+          // Activity might not be available, ignore
         }
       }
 
@@ -232,20 +234,8 @@ export default function Finances() {
     }, [ready, faturamentoPeriodo, topServiciosPeriodo])
   )
 
-  const handleOpenInsights = () => {
+  function handleOpenInsights() {
     setInsightsModalOpen(true)
-  }
-
-  const handleCloseInsights = () => {
-    setInsightsModalOpen(false)
-  }
-
-  const handleOpenHistory = () => {
-    setHistoryModalOpen(true)
-  }
-
-  const handleCloseHistory = () => {
-    setHistoryModalOpen(false)
   }
 
   const getVariationColor = (value) => {
@@ -367,7 +357,7 @@ export default function Finances() {
                   onPress={() => setHistoryModalOpen(true)}
                 >
                   <Text style={styles.periodText}>
-                    {faturamentoPeriodo} mês{faturamentoPeriodo > 1 ? 'es' : ''}
+                    {faturamentoPeriodo} mes{faturamentoPeriodo > 1 ? 'es' : ''}
                   </Text>
                   <Ionicons name="chevron-down" size={18} color="#982546" />
                 </Pressable>
@@ -478,7 +468,7 @@ export default function Finances() {
                   onPress={() => setTopServiciosModalOpen(true)}
                 >
                   <Text style={styles.periodText}>
-                    {topServiciosPeriodo} mês{topServiciosPeriodo > 1 ? 'es' : ''}
+                    {topServiciosPeriodo} mes{topServiciosPeriodo > 1 ? 'es' : ''}
                   </Text>
                   <Ionicons name="chevron-down" size={18} color="#982546" />
                 </Pressable>
@@ -519,7 +509,7 @@ export default function Finances() {
                 inactiveClientsData.slice(0, 5).map((client, index) => {
                   const isBadgeAlert = (client.qtd_meses_ultimo_agendamento || 0) >= 6
                   const badgeType = isBadgeAlert ? 'ALERTA' : 'INFO'
-                  
+
                   return (
                     <View key={index} style={styles.inactiveItem}>
                       <View>
@@ -527,7 +517,7 @@ export default function Finances() {
                         <Text style={styles.inactiveDate}>
                           {client.qtd_meses_ultimo_agendamento}
                           {' '}
-                          {(client.qtd_meses_ultimo_agendamento || 0) > 1 ? 'meses' : 'mês'}
+                          {(client.qtd_meses_ultimo_agendamento || 0) > 1 ? 'meses' : 'mes'}
                         </Text>
                       </View>
                       <View
@@ -554,31 +544,56 @@ export default function Finances() {
         )}
       </ScrollView>
 
-      <Modal
+      <BusinessInsightsModal
         visible={insightsModalOpen}
+        onClose={() => setInsightsModalOpen(false)}
+      />
+
+      <Modal
+        visible={historyModalOpen}
         transparent
         animationType="slide"
-        onRequestClose={handleCloseInsights}
+        onRequestClose={() => setHistoryModalOpen(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Insights</Text>
-              <Pressable onPress={handleCloseInsights}>
+              <Text style={styles.modalTitle}>Período - Faturamento</Text>
+              <Pressable onPress={() => setHistoryModalOpen(false)}>
                 <Ionicons name="close" size={24} color="#5c0f25" />
               </Pressable>
             </View>
-            {insights.map((insight, index) => (
-              <View key={index} style={styles.modalInsightItem}>
-                <Text style={styles.modalInsightText}>{insight.text}</Text>
-              </View>
-            ))}
+            <View style={styles.periodGrid}>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((mes) => (
+                <Pressable
+                  key={mes}
+                  style={[
+                    styles.periodOption,
+                    faturamentoPeriodo === mes && styles.periodOptionActive,
+                  ]}
+                  onPress={() => {
+                    setFaturamentoPeriodo(mes)
+                    fetchFaturamentoData(mes)
+                    setHistoryModalOpen(false)
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.periodOptionText,
+                      faturamentoPeriodo === mes && styles.periodOptionTextActive,
+                    ]}
+                  >
+                    {mes} mes{mes > 1 ? 'es' : ''}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
             <Pressable
               style={({ pressed }) => [
                 styles.closeButton,
                 pressed && styles.closeButtonPressed,
               ]}
-              onPress={handleCloseInsights}
+              onPress={() => setHistoryModalOpen(false)}
             >
               <Text style={styles.closeButtonText}>Fechar</Text>
             </Pressable>
@@ -620,7 +635,7 @@ export default function Finances() {
                       topServiciosPeriodo === mes && styles.periodOptionTextActive,
                     ]}
                   >
-                    {mes} mês{mes > 1 ? 'es' : ''}
+                    {mes} mes{mes > 1 ? 'es' : ''}
                   </Text>
                 </Pressable>
               ))}
@@ -655,7 +670,7 @@ export default function Finances() {
             <View style={styles.infoBox}>
               <Ionicons name="information-circle" size={32} color="#982546" style={{ marginBottom: 12 }} />
               <Text style={styles.infoText}>
-                Os agendamentos mostrados são referentes ao mês passado.
+                Os agendamentos mostrados são referentes ao mes passado.
               </Text>
             </View>
             <Pressable
@@ -689,9 +704,9 @@ export default function Finances() {
               <Ionicons name="information-circle" size={32} color="#982546" style={{ marginBottom: 12 }} />
               <Text style={styles.infoText}>
                 <Text style={{ fontWeight: '700' }}>Valores:</Text>{'\n'}
-                Referentes ao mês atual.{'\n\n'}
+                Referentes ao mes atual.{'\n\n'}
                 <Text style={{ fontWeight: '700' }}>Porcentagens:</Text>{'\n'}
-                Referentes ao comparativo com o mês anterior.{'\n\n'}
+                Referentes ao comparativo com o mes anterior.{'\n\n'}
                 <Text style={{ fontWeight: '700' }}>Custos:</Text>{'\n'}
                 Atualizados no dia seguinte após você subir a planilha de custos.
               </Text>
@@ -775,7 +790,7 @@ export default function Finances() {
         </View>
       </Modal>
 
-      <NavbarPro />
+      <NavbarPro active="Finanças" />
     </View>
   )
 }

@@ -183,7 +183,7 @@ export default function UploadsScreen() {
                 visible={popupVisible}
                 type={popupType}
             />
-            <NavbarPro />
+            <NavbarPro active="Mais" />
         </View>
     )
 }
@@ -199,6 +199,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 16,
         marginBottom: 20,
+        marginTop: 30,
     },
     title: {
         fontSize: 24,
@@ -225,6 +226,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowRadius: 4,
         elevation: 3,
+        marginBottom: 20,
     },
     sectionTitle: {
         fontSize: 16,
