@@ -14,9 +14,11 @@ export default function CardSchedule({
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const canShowActions = !isClient && !['FEITO', 'CANCELADO'].includes(
+  const canShowActions = !['FEITO', 'CANCELADO'].includes(
     String(schedule.status).trim().toUpperCase()
   )
+
+  const canShowConfirmButton = !isClient && canShowActions
 
   const confirmarCancelamento = async () => {
     if (cancellationReason.trim() === '') {
@@ -159,15 +161,9 @@ export default function CardSchedule({
                 setCancelModalOpen(true)
               }}
             >
-              <Text style={styles.actionText}>✕</Text>
+              <Text style={styles.actionText}>Cancelar</Text>
             </Pressable>
 
-            <Pressable
-              style={[styles.actionButton, styles.confirmButton]}
-              onPress={handleConfirmSchedule}
-            >
-              <Text style={styles.actionText}>✓</Text>
-            </Pressable>
           </View>
         )}
 
@@ -197,6 +193,10 @@ export default function CardSchedule({
               multiline={true}
               numberOfLines={4}
               editable={!isLoading}
+              keyboardType="default"
+              autoFocus={true}
+              scrollEnabled={true}
+              maxLength={500}
             />
 
             {errorMessage !== '' && (
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
   },
 
   actionButton: {
-    width: 44,
+    width: 120,
     height: 44,
     borderRadius: 14,
     alignItems: 'center',

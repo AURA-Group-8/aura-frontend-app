@@ -15,12 +15,15 @@ export default function HistoryClient() {
   const [size, setSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [sortBy, setSortBy] = useState('id');
+  const [sortBy, setSortBy] = useState('startDatetime');
   const [direction, setDirection] = useState('DESC');
   const userNameRef = useRef(null)
   const authHeadersRef = useRef({})
+  const pageRef = useRef(0)
+  const totalPagesRef = useRef(1)
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
   const [ready, setReady] = useState(false)
+  const PAGE_SIZE = 10;
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -35,6 +38,12 @@ export default function HistoryClient() {
     
     initializeAuth()
   }, [])
+
+  // Mantém refs atualizadas
+  useEffect(() => {
+    pageRef.current = page
+    totalPagesRef.current = totalPages
+  }, [page, totalPages])
 
   useEffect(() => {
       let isMounted = true
@@ -64,57 +73,93 @@ export default function HistoryClient() {
 
   async function getSchedules() {
     try {
-      const response = await axios.get(`${API_URL}/api/agendamentos/card`, {
-        headers: authHeadersRef.current,
-        params: {
-          page,
-          size,
-          sortBy,
-          direction,
-        },
-      });
+      let allSchedules = [];
+      let currentPage = page;
+      let hasMorePages = true;
+      let backendTotalPages = 1;
 
-      const responseData = response.data;
-      const content = Array.isArray(responseData.content)
-        ? responseData.content
-        : Array.isArray(responseData)
-          ? responseData
-          : [];
+      // Carrega páginas consecutivas até ter 10 agendamentos válidos
+      while (allSchedules.length < PAGE_SIZE && hasMorePages) {
+        const response = await axios.get(`${API_URL}/api/agendamentos/card`, {
+          headers: authHeadersRef.current,
+          params: {
+            page: currentPage,
+            size: PAGE_SIZE,
+            sortBy,
+            direction,
+          },
+        });
 
-      const formattedSchedules = content.map((agendamento) => ({
-        id: agendamento.idScheduling,
-        userName: agendamento.userName,
-        jobsNames: agendamento.jobsNames,
-        startDatetime: agendamento.startDatetime,
-        endDatetime: agendamento.endDatetime,
-        status: agendamento.status,
-        paymentStatus: agendamento.paymentStatus,
-        totalPrice: agendamento.totalPrice,
-        feedback: agendamento.feedback,
-      }));
+        const responseData = response.data;
+        backendTotalPages = responseData.totalPages ?? 1;
+        const content = Array.isArray(responseData.content)
+          ? responseData.content
+          : Array.isArray(responseData)
+            ? responseData
+            : [];
 
-      const userSchedules = formattedSchedules.filter((agendamento) => {
-        return String(agendamento.userName).toLowerCase() === String(userNameRef.current).toLowerCase();
-      });
+        if (content.length === 0) {
+          hasMorePages = false;
+          break;
+        }
 
-      const completedSchedules = userSchedules.filter((agendamento) => {
-        const status = String(agendamento.status).trim().toUpperCase();
-        return status === 'FEITO' || status === 'CANCELADO';
-      });
+        const formattedSchedules = content.map((agendamento) => ({
+          id: agendamento.idScheduling || agendamento.id,
+          userName: agendamento.userName,
+          jobsNames: agendamento.jobsNames,
+          startDatetime: agendamento.startDatetime,
+          endDatetime: agendamento.endDatetime,
+          status: agendamento.status,
+          paymentStatus: agendamento.paymentStatus,
+          totalPrice: agendamento.totalPrice,
+          feedback: agendamento.feedback,
+        }));
 
-      const sortedSchedules = completedSchedules.sort((a, b) => {
+        // Filtra apenas agendamentos do usuário
+        const userSchedules = formattedSchedules.filter((agendamento) =>
+          String(agendamento.userName).toLowerCase() === String(userNameRef.current).toLowerCase()
+        );
+
+        // Filtra apenas FEITO ou CANCELADO
+        const completedSchedules = userSchedules.filter((agendamento) => {
+          const status = String(agendamento.status).trim().toUpperCase();
+          return status === 'FEITO' || status === 'CANCELADO';
+        });
+
+        allSchedules = [...allSchedules, ...completedSchedules];
+
+        // Se tem menos de 10 agendamentos válidos e há mais páginas, continua
+        if (allSchedules.length < PAGE_SIZE && currentPage < backendTotalPages - 1) {
+          currentPage++;
+        } else {
+          hasMorePages = false;
+        }
+      }
+
+      // Ordena por data de fim (descendente - mais recentes primeiro)
+      const sortedSchedules = allSchedules.sort((a, b) => {
         const aDate = new Date(a.endDatetime || 0);
         const bDate = new Date(b.endDatetime || 0);
         return bDate - aDate;
       });
 
+      // Calcula páginas baseado no total de agendamentos válidos
+      const totalValid = sortedSchedules.length;
+      const calculatedTotalPages = Math.ceil(totalValid / PAGE_SIZE) || 1;
+
+      console.log('📊 DEBUG - Histórico recebido:', {
+        totalValido: totalValid,
+        page,
+        size: PAGE_SIZE,
+        calculatedTotalPages,
+        backendTotalPages,
+      });
+
       setAgendamentos(sortedSchedules);
-      setTotalPages(responseData.totalPages ?? 1);
-      setTotalItems(completedSchedules.length);
-      setPage(responseData.page ?? responseData.pageNumber ?? page);
-      setSize(responseData.size ?? responseData.pageSize ?? size);
-    }
-    catch (error) {
+      setTotalPages(calculatedTotalPages);
+      setTotalItems(totalValid);
+      setSize(PAGE_SIZE);
+    } catch (error) {
       console.error('❌ Erro ao buscar histórico de agendamentos:', {
         status: error.response?.status,
         statusText: error.response?.statusText,
@@ -156,31 +201,30 @@ export default function HistoryClient() {
             <Text style={styles.emptyText}>Nenhum agendamento no histórico</Text>
           </View>
         )}
-
-        {agendamentos.length > 0 && (
-          <View style={styles.paginationContainer}>
-            <Pressable
-              style={[styles.pageButton, page <= 0 && styles.pageButtonDisabled]}
-              disabled={page <= 0}
-              onPress={() => setPage((current) => Math.max(0, current - 1))}
-            >
-              <Text style={styles.pageButtonText}>Anterior</Text>
-            </Pressable>
-
-            <Text style={styles.pageInfo}>
-              Página {page + 1} de {totalPages}
-            </Text>
-
-            <Pressable
-              style={[styles.pageButton, page >= totalPages - 1 && styles.pageButtonDisabled]}
-              disabled={page >= totalPages - 1}
-              onPress={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
-            >
-              <Text style={styles.pageButtonText}>Próxima</Text>
-            </Pressable>
-          </View>
-        )}
       </ScrollView>
+
+      {/* Paginação - sempre visível */}
+      <View style={styles.paginationContainer}>
+        <Pressable
+          style={[styles.pageButton, page <= 0 && styles.pageButtonDisabled]}
+          disabled={page <= 0}
+          onPress={() => setPage((current) => Math.max(0, current - 1))}
+        >
+          <Text style={styles.pageButtonText}>Anterior</Text>
+        </Pressable>
+
+        <Text style={styles.pageInfo}>
+          Página {page + 1} de {totalPages}
+        </Text>
+
+        <Pressable
+          style={[styles.pageButton, page >= totalPages - 1 && styles.pageButtonDisabled]}
+          disabled={page >= totalPages - 1}
+          onPress={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
+        >
+          <Text style={styles.pageButtonText}>Próxima</Text>
+        </Pressable>
+      </View>
 
       <Navbar/>
 
@@ -203,7 +247,7 @@ const styles = StyleSheet.create({
     gap: 20,
     paddingHorizontal: 20,
     marginBottom: 20,
-    marginTop: 40,
+    marginTop: 10,
   },
 
   title: {
@@ -251,20 +295,19 @@ const styles = StyleSheet.create({
   },
 
   pageButton: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 5,
     backgroundColor: '#982546',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 16,
   },
 
   pageButtonDisabled: {
-    backgroundColor: '#CCCCCC',
+    backgroundColor: '#c49a98',
   },
 
   pageButtonText: {
-    color: '#FFF',
-    fontWeight: 'bold',
-    fontSize: 14,
+    color: '#fff',
+    fontWeight: '700',
   },
 
   pageInfo: {

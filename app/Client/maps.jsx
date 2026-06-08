@@ -337,7 +337,7 @@ export default function MapScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.push('/Client/schedules')}
+          onPress={() => router.replace('/Client/schedules')}
           style={styles.backButton}
         >
           <Ionicons name="chevron-back" size={28} color="#fff" />
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#8a1c3a',
-    paddingTop: 12,
+    paddingTop: 25,
     paddingBottom: 12,
     paddingHorizontal: 16,
     zIndex: 10,

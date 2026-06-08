@@ -16,7 +16,7 @@ export default function NewSchedule() {
     const [visibleYear, setVisibleYear] = useState(today.getFullYear())
     const [selectedTime, setSelectedTime] = useState(null)
     const [selectedClient, setSelectedClient] = useState(null)
-    const [selectedJob, setSelectedJob] = useState(null)
+    const [selectedJobs, setSelectedJobs] = useState([])
 
     return (
         <ScrollView style={styles.page} contentContainerStyle={styles.content}>
@@ -36,11 +36,11 @@ export default function NewSchedule() {
                 setVisibleYear={setVisibleYear}
             />
 
-            <ServiceListComponent selectedJob={selectedJob} setSelectedJob={setSelectedJob} />
+            <ServiceListComponent selectedJobs={selectedJobs} setSelectedJobs={setSelectedJobs} />
 
             <TimeSelectionComponent
                 selectedDate={selectedDate}
-                selectedJob={selectedJob}
+                selectedJobs={selectedJobs}
                 selectedTime={selectedTime}
                 setSelectedTime={setSelectedTime}
             />
@@ -51,7 +51,8 @@ export default function NewSchedule() {
                 selectedDate={selectedDate}
                 selectedTime={selectedTime}
                 selectedClient={selectedClient}
-                selectedJob={selectedJob}
+                selectedJobs={selectedJobs}
+                onSuccessCallback={() => router.replace('/Professional/schedules-home')}
             />
         </ScrollView>
     )

@@ -72,13 +72,14 @@ const styles = StyleSheet.create({
     selectionInfo: {
         marginTop: 24,
         padding: 18,
-        backgroundColor: '#fff3dc',
+        backgroundColor: '#fff',
         borderRadius: 20,
     },
     selectionLabel: {
-        fontSize: 14,
-        color: '#7a3b45',
-        marginBottom: 6,
+         fontSize: 18,
+        fontWeight: '700',
+        color: '#281111',
+        marginBottom: 16,
     },
     selectButton: {
         marginTop: 12,

@@ -37,6 +37,10 @@ export default function ClientesScreen() {
     init()
   }, [])
 
+  useEffect(() => {
+    handleFilter()
+  }, [searchText])
+
   async function fetchClientes() {
     try {
       setLoading(true)
@@ -66,8 +70,11 @@ export default function ClientesScreen() {
       return
     }
 
+    const searchLower = searchText.toLowerCase()
     const filtered = clientes.filter(cliente => 
-      cliente.username.toLowerCase().includes(searchText.toLowerCase())
+      (cliente.username && cliente.username.toLowerCase().includes(searchLower)) ||
+      (cliente.name && cliente.name.toLowerCase().includes(searchLower)) ||
+      (cliente.email && cliente.email.toLowerCase().includes(searchLower))
     )
     setFilteredClientes(filtered)
   }
@@ -162,6 +169,7 @@ const styles = StyleSheet.create({
     height: 60,
     fontSize: 28,
     paddingTop: 15,
+    paddingHorizontal: 20,
     marginTop: 40,
   },
   containerGeneral: {

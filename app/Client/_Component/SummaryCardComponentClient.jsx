@@ -53,7 +53,7 @@ export default function SummaryCardComponent({ selectedDate, selectedTime, selec
             })
             console.log('Agendamento criado com sucesso:', response.data)
 
-            router.push('/Client/schedules')
+            router.replace('/Client/schedules')
 
         } catch (error) {
             console.error('Erro ao criar agendamento:', error)

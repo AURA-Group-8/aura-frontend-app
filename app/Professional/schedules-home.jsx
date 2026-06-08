@@ -15,12 +15,13 @@ export default function Schedules() {
   const [size, setSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [sortBy, setSortBy] = useState('id');
-  const [direction, setDirection] = useState('ASC');
+  const [sortBy, setSortBy] = useState('startDatetime');
+  const [direction, setDirection] = useState('DESC');
   const [filterType, setFilterType] = useState('todos')
   const authHeadersRef = useRef({})
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
   const [ready, setReady] = useState(false)
+  const PAGE_SIZE = 10; // Força sempre 10 agendamentos por página
 
   useEffect(() => {
     const init = async () => {
@@ -58,10 +59,22 @@ export default function Schedules() {
     useCallback(() => {
       if (ready) {
         console.log('🔄 Tela em foco - refrescando agendamentos')
-        getSchedules()
+        // Volta para página 0 ao voltar da tela de criar agendamento
+        if (page !== 0) {
+          setPage(0)
+        } else {
+          getSchedules()
+        }
       }
     }, [ready])
   )
+
+  useEffect(() => {
+    if (ready) {
+      console.log('📄 Página alterada - buscando agendamentos')
+      getSchedules()
+    }
+  }, [ready, page])
 
   const router = useRouter();
 
@@ -105,6 +118,7 @@ export default function Schedules() {
 
       console.log('✅ Resposta do servidor:', response.data)
 
+      // Atualiza o estado IMEDIATAMENTE com os novos valores
       setAgendamentos((prev) =>
         prev.map((schedule) =>
           schedule.id === scheduleId
@@ -116,6 +130,18 @@ export default function Schedules() {
             : schedule
         )
       )
+
+      // Verifica se é FEITO com PAGO para remover após 20 segundos
+      const isFeitoPago = response.data.status === 'FEITO' && response.data.paymentStatus === 'PAGO'
+
+      if (isFeitoPago) {
+        // Aguarda 20 segundos antes de remover o card da lista
+        setTimeout(() => {
+          setAgendamentos((prev) =>
+            prev.filter((schedule) => schedule.id !== scheduleId)
+          )
+        }, 20000)
+      }
 
       return response.data
     } catch (error) {
@@ -153,9 +179,12 @@ export default function Schedules() {
 
       console.log('✅ Agendamento deletado com sucesso')
 
-      setAgendamentos((prev) =>
-        prev.filter((schedule) => schedule.id !== scheduleId)
-      )
+      // Aguarda 20 segundos antes de remover o card da lista
+      setTimeout(() => {
+        setAgendamentos((prev) =>
+          prev.filter((schedule) => schedule.id !== scheduleId)
+        )
+      }, 20000)
 
       return response.data
     } catch (error) {
@@ -171,58 +200,101 @@ export default function Schedules() {
 
   async function getSchedules() {
     try {
+      let allSchedules = [];
+      let currentPage = page;
+      let hasMorePages = true;
+      let backendTotalPages = 1;
 
-      const response = await axios.get(`${API_URL}/api/agendamentos/card`, {
-        headers: authHeadersRef.current,
-        params: {
-          page,
-          size,
-          sortBy,
-          direction,
-        },
-      });
+      // Carrega páginas consecutivas até ter 10 agendamentos válidos
+      while (allSchedules.length < PAGE_SIZE && hasMorePages) {
+        const response = await axios.get(`${API_URL}/api/agendamentos/card`, {
+          headers: authHeadersRef.current,
+          params: {
+            page: currentPage,
+            size: PAGE_SIZE,
+            sortBy,
+            direction,
+          },
+        });
 
-      const responseData = response.data;
-      const content = Array.isArray(responseData.content)
-        ? responseData.content
-        : Array.isArray(responseData)
-          ? responseData
-          : [];
+        const responseData = response.data;
+        backendTotalPages = responseData.totalPages ?? 1;
+        const content = Array.isArray(responseData.content)
+          ? responseData.content
+          : Array.isArray(responseData)
+            ? responseData
+            : [];
 
-      const formattedSchedules = content.map((agendamento) => ({
-        id: agendamento.idScheduling,
-        userName: agendamento.userName,
-        jobsNames: agendamento.jobsNames,
-        startDatetime: agendamento.startDatetime,
-        endDatetime: agendamento.endDatetime,
-        status: agendamento.status,
-        paymentStatus: agendamento.paymentStatus,
-        totalPrice: agendamento.totalPrice,
-        feedback: agendamento.feedback,
-      }));
-
-      const sortedSchedules = formattedSchedules.sort((a, b) => {
-        const aIsPending = a.status === 'PENDENTE'
-        const bIsPending = b.status === 'PENDENTE'
-
-        if (aIsPending !== bIsPending) {
-          return aIsPending ? -1 : 1
+        if (content.length === 0) {
+          hasMorePages = false;
+          break;
         }
 
-        const aDate = new Date(a.startDatetime || 0)
-        const bDate = new Date(b.startDatetime || 0)
+        const formattedSchedules = content.map((agendamento) => ({
+          id: agendamento.idScheduling || agendamento.id,
+          userName: agendamento.userName,
+          jobsNames: agendamento.jobsNames,
+          startDatetime: agendamento.startDatetime,
+          endDatetime: agendamento.endDatetime,
+          status: agendamento.status,
+          paymentStatus: agendamento.paymentStatus,
+          totalPrice: agendamento.totalPrice,
+          feedback: agendamento.feedback,
+        }));
 
-        return aDate - bDate
-      })
+        // Filtra apenas agendamentos válidos (PENDENTE)
+        const validSchedules = formattedSchedules.filter(sch => {
+          const status = String(sch.status).trim().toUpperCase();
+          const paymentStatus = String(sch.paymentStatus).trim().toUpperCase();
+          
+          if (status === 'CANCELADO') return false;
+          if (status === 'FEITO' && paymentStatus === 'PAGO') return false;
+          
+          return true;
+        });
 
+        allSchedules = [...allSchedules, ...validSchedules];
+
+        // Se tem menos de 10 agendamentos válidos e há mais páginas, continua
+        if (allSchedules.length < PAGE_SIZE && currentPage < backendTotalPages - 1) {
+          currentPage++;
+        } else {
+          hasMorePages = false;
+        }
+      }
+
+      // Ordena (PENDENTE primeiro, depois por data)
+      const sortedSchedules = allSchedules.sort((a, b) => {
+        const aIsPending = a.status === 'PENDENTE';
+        const bIsPending = b.status === 'PENDENTE';
+
+        if (aIsPending !== bIsPending) {
+          return aIsPending ? -1 : 1;
+        }
+
+        const aDate = new Date(a.startDatetime || 0);
+        const bDate = new Date(b.startDatetime || 0);
+
+        return aDate - bDate;
+      });
+
+      // Calcula páginas baseado no total de agendamentos válidos
+      const totalValid = sortedSchedules.length;
+      const calculatedTotalPages = Math.ceil(totalValid / PAGE_SIZE) || 1;
+
+      console.log('📊 DEBUG - Agendamentos recebidos:', {
+        totalValido: totalValid,
+        page,
+        size: PAGE_SIZE,
+        calculatedTotalPages,
+        backendTotalPages,
+      });
 
       setAgendamentos(sortedSchedules);
-      setTotalPages(responseData.totalPages ?? 1);
-      setTotalItems(responseData.totalElements ?? content.length);
-      setPage(responseData.page ?? responseData.pageNumber ?? page);
-      setSize(responseData.size ?? responseData.pageSize ?? size);
-    }
-    catch (error) {
+      setTotalPages(calculatedTotalPages);
+      setTotalItems(totalValid);
+      setSize(PAGE_SIZE);
+    } catch (error) {
       console.error('❌ Erro ao buscar agendamentos:', {
         status: error.response?.status,
         statusText: error.response?.statusText,
@@ -236,10 +308,36 @@ export default function Schedules() {
   }
 
   const getFilteredSchedules = () => {
-    const activeSchedules = agendamentos.filter(sch => 
-      !['FEITO', 'CANCELADO'].includes(String(sch.status).trim().toUpperCase())
-    )
+    // Filtrar: manter PENDENTE ou (FEITO com pagamento pendente)
+    // Remover: CANCELADO e FEITO com PAGO
+    const activeSchedules = agendamentos.filter(sch => {
+      const status = String(sch.status).trim().toUpperCase()
+      const paymentStatus = String(sch.paymentStatus).trim().toUpperCase()
+      
+      // Remove CANCELADO
+      if (status === 'CANCELADO') return false
+      
+      // Remove FEITO com pagamento PAGO
+      if (status === 'FEITO' && paymentStatus === 'PAGO') return false
+      
+      // Mantém PENDENTE e FEITO com pagamento PENDENTE
+      return true
+    }).sort((a, b) => {
+      // Pendentes primeiro
+      const aIsPending = a.status === 'PENDENTE'
+      const bIsPending = b.status === 'PENDENTE'
+      
+      if (aIsPending !== bIsPending) {
+        return aIsPending ? -1 : 1
+      }
+      
+      // Mesmos status: ordena por data
+      const aDate = new Date(a.startDatetime || 0)
+      const bDate = new Date(b.startDatetime || 0)
+      return aDate - bDate
+    })
 
+    // NÃO aplicar paginação extra aqui - o backend já paginou
     if (filterType === 'todos') {
       return activeSchedules
     }
@@ -259,7 +357,7 @@ export default function Schedules() {
     endOfMonth.setDate(0)
     endOfMonth.setHours(23, 59, 59, 999)
 
-    return activeSchedules.filter((sch) => {
+    const result = activeSchedules.filter((sch) => {
       const schedDate = new Date(sch.startDatetime || 0)
 
       if (filterType === 'hoje') {
@@ -276,7 +374,18 @@ export default function Schedules() {
 
       return true
     })
+    
+    return result
   }
+
+  // Voltar para página anterior se página atual ficar vazia
+  useEffect(() => {
+    const filtered = getFilteredSchedules()
+    if (filtered.length === 0 && page > 0 && agendamentos.length > 0) {
+      console.log('📄 Página vazia após filtro, voltando para página anterior')
+      setPage(page - 1)
+    }
+  }, [filterType, agendamentos])
 
   return (
     <View style={styles.container}>
@@ -371,10 +480,7 @@ export default function Schedules() {
             <CardSchedule
               key={item.id}
               schedule={item}
-              showActions={
-                !['FEITO', 'CANCELADO'].includes(
-                  String(item.status).trim().toUpperCase()
-                )}
+              showActions={item.status !== 'CANCELADO'}
               onCancelSchedule={cancelSchedule}
               onUpdateSchedule={updateSchedule}
               onRefresh={getSchedules}
@@ -386,29 +492,29 @@ export default function Schedules() {
             <Text style={styles.emptyText}>Sem agendamentos neste período</Text>
           </View>
         )}
-
-        <View style={styles.paginationContainer}>
-          <Pressable
-            style={[styles.pageButton, page <= 0 && styles.pageButtonDisabled]}
-            disabled={page <= 0}
-            onPress={() => setPage((current) => Math.max(0, current - 1))}
-          >
-            <Text style={styles.pageButtonText}>Anterior</Text>
-          </Pressable>
-
-          <Text style={styles.pageInfo}>
-            Página {page + 1} de {totalPages}
-          </Text>
-
-          <Pressable
-            style={[styles.pageButton, page >= totalPages - 1 && styles.pageButtonDisabled]}
-            disabled={page >= totalPages - 1}
-            onPress={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
-          >
-            <Text style={styles.pageButtonText}>Próxima</Text>
-          </Pressable>
-        </View>
       </ScrollView>
+
+      <View style={styles.paginationContainer}>
+        <Pressable
+          style={[styles.pageButton, page <= 0 && styles.pageButtonDisabled]}
+          disabled={page <= 0}
+          onPress={() => setPage((current) => Math.max(0, current - 1))}
+        >
+          <Text style={styles.pageButtonText}>Anterior</Text>
+        </Pressable>
+
+        <Text style={styles.pageInfo}>
+          Página {page + 1} de {totalPages}
+        </Text>
+
+        <Pressable
+          style={[styles.pageButton, page >= totalPages - 1 && styles.pageButtonDisabled]}
+          disabled={page >= totalPages - 1}
+          onPress={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
+        >
+          <Text style={styles.pageButtonText}>Próxima</Text>
+        </Pressable>
+      </View>
 
       <NavbarPro active="Agenda" />
 
@@ -573,11 +679,11 @@ const styles = StyleSheet.create({
 
   paginationContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 20,
-    paddingHorizontal: 10,
+    gap: 10,
+    marginVertical: 20,
+    paddingBottom: 20,
   },
 
   pageButton: {

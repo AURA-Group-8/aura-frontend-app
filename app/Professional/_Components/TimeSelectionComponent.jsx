@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import axios from 'axios'
 
-export default function TimeSelectionComponent({ selectedDate, selectedJob, selectedTime, setSelectedTime }) {
+export default function TimeSelectionComponent({ selectedDate, selectedJobs, selectedTime, setSelectedTime }) {
     const [availableTimes, setAvailableTimes] = useState([]) 
     const authHeadersRef = useRef({})
     const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
@@ -43,14 +43,14 @@ export default function TimeSelectionComponent({ selectedDate, selectedJob, sele
 
     useEffect(() => {
         loadAvailableTimes()
-    }, [selectedDate, selectedJob])
+    }, [selectedDate, selectedJobs])
 
     async function loadAvailableTimes() {
         if (authHeadersRef.current && Object.keys(authHeadersRef.current).length === 0) return
 
-        const duration = selectedJob?.expectedDurationMinutes ?? 30
+        const totalDuration = selectedJobs.reduce((sum, job) => sum + (job?.expectedDurationMinutes ?? 30), 0)
        
-        const times = await getAvailableTimes(duration)
+        const times = await getAvailableTimes(totalDuration)
         setAvailableTimes(times)
         setSelectedTime(null)
     }
@@ -82,7 +82,7 @@ export default function TimeSelectionComponent({ selectedDate, selectedJob, sele
         return raw.endsWith(':00') ? raw.slice(0, -3) : raw
     }
 
-    if (!selectedJob) return null
+    if (selectedJobs.length === 0) return null
 
     return (
         <View style={styles.timesCard}>
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
         elevation: 6,
     },
     timesTitle: {
-        fontSize: 16,
+       fontSize: 18,
         fontWeight: '700',
         color: '#281111',
         marginBottom: 16,

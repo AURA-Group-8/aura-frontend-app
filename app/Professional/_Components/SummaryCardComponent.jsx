@@ -19,17 +19,20 @@ const monthNames = [
     'dezembro',
 ]
 
-export default function SummaryCardComponent({ selectedDate, selectedTime, selectedClient, selectedJob }) {
+export default function SummaryCardComponent({ selectedDate, selectedTime, selectedClient, selectedJobs }) {
     const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
     const [isSubmitting, setIsSubmitting] = useState(false)
     
     const clientLabel = selectedClient ? selectedClient.username || selectedClient.name || selectedClient.email : null
     
+    const totalPrice = selectedJobs.reduce((sum, job) => sum + (job.price || 0), 0)
+    const totalDuration = selectedJobs.reduce((sum, job) => sum + (job.expectedDurationMinutes || 30), 0)
+    
     async function handleConfirm() {
-        const token = typeof window !== 'undefined' ? await AsyncStorage.getItem('token') : null
+        const token = await AsyncStorage.getItem('token')
         const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
 
-        if (!selectedJob || !selectedTime || !selectedClient) return
+        if (selectedJobs.length === 0 || !selectedTime || !selectedClient) return
         
         const year = selectedDate.getFullYear()
         const month = String(selectedDate.getMonth() + 1).padStart(2, '0')
@@ -39,7 +42,7 @@ export default function SummaryCardComponent({ selectedDate, selectedTime, selec
 
         const body = {
             userId: selectedClient.id,
-            jobsIds: [selectedJob.id],
+            jobsIds: selectedJobs.map(job => job.id),
             startDatetime,
         }
 
@@ -53,7 +56,7 @@ export default function SummaryCardComponent({ selectedDate, selectedTime, selec
             })
             console.log('Agendamento criado com sucesso:', response.data)
 
-            router.push('/Professional/schedules-home')
+            router.replace('/Professional/schedules-home')
 
         } catch (error) {
             console.error('Erro ao criar agendamento:', error)
@@ -86,18 +89,37 @@ export default function SummaryCardComponent({ selectedDate, selectedTime, selec
                 <Text style={styles.summaryLabel}>Horário</Text>
                 <Text style={styles.summaryValue}>{selectedTime ?? '—'}</Text>
             </View>
+
+            {selectedJobs.length > 0 && (
+                <>
+                    <View style={styles.divider} />
+                    <Text style={styles.servicesTitle}>Serviços Selecionados</Text>
+                    {selectedJobs.map((job, index) => (
+                        <View key={`job-${job.id}-${index}`} style={styles.serviceRow}>
+                            <Text style={styles.serviceName}>{job.name}</Text>
+                            <View style={styles.serviceDetails}>
+                                <Text style={styles.serviceDetail}>{job.expectedDurationMinutes || 30} min</Text>
+                                <Text style={styles.serviceDetail}>R$ {(job.price || 0).toFixed(2).replace('.', ',')}</Text>
+                            </View>
+                        </View>
+                    ))}
+                    <View style={styles.divider} />
+                </>
+            )}
+
             <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Duração</Text>
-                <Text style={styles.summaryValue}>{formatDuration(selectedJob?.expectedDurationMinutes ?? selectedJob?.duration ?? 30)}</Text>
+                <Text style={styles.summaryLabel}>Duração Total</Text>
+                <Text style={styles.summaryValue}>{formatDuration(totalDuration)}</Text>
             </View>
             <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Total</Text>
-                <Text style={styles.summaryValue}>{selectedJob?.price != null ? `R$ ${Number(selectedJob.price).toFixed(2).replace('.', ',')}` : 'R$ 0,00'}</Text>
+                <Text style={styles.summaryValue}>R$ {totalPrice.toFixed(2).replace('.', ',')}</Text>
             </View>
+            
             <Pressable
-                style={[styles.confirmButton, !(selectedJob && selectedTime && selectedClient) && styles.confirmButtonDisabled]}
+                style={[styles.confirmButton, !(selectedJobs.length > 0 && selectedTime && selectedClient) && styles.confirmButtonDisabled]}
                 onPress={handleConfirm}
-                disabled={isSubmitting || !(selectedJob && selectedTime && selectedClient)}
+                disabled={isSubmitting || !(selectedJobs.length > 0 && selectedTime && selectedClient)}
             >
                 <Text style={styles.confirmButtonText}>
                     {isSubmitting ? 'Enviando...' : 'Confirmar Agendamento'}
@@ -141,6 +163,39 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: '#281111',
         fontWeight: '700',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#d4b98f',
+        marginVertical: 12,
+    },
+    servicesTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#7a3b45',
+        marginBottom: 10,
+    },
+    serviceRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+        paddingBottom: 8,
+    },
+    serviceName: {
+        fontSize: 13,
+        color: '#281111',
+        fontWeight: '500',
+        flex: 1,
+    },
+    serviceDetails: {
+        flexDirection: 'row',
+        gap: 12,
+        alignItems: 'flex-end',
+    },
+    serviceDetail: {
+        fontSize: 12,
+        color: '#7a3b45',
     },
     confirmButton: {
         marginTop: 12,

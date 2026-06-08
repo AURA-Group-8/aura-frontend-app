@@ -198,6 +198,10 @@ export default function CardSchedule({
               multiline={true}
               numberOfLines={4}
               editable={!isLoading}
+              keyboardType="default"
+              autoFocus={true}
+              scrollEnabled={true}
+              maxLength={500}
             />
 
             {errorMessage !== '' && (

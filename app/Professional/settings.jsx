@@ -35,13 +35,10 @@ export default function Configuracoes() {
     <View style={styles.container}>
       
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push('/Professional/moreScreen')}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/Professional/moreScreen')}>
           <Feather name="arrow-left" size={30}/>
         </TouchableOpacity>
         <Text style={styles.title}>Configurações</Text>
-        <TouchableOpacity style={styles.saveBtn}>
-          <Text style={{ color: '#fff', fontWeight: 'bold' }}>Salvar</Text>
-        </TouchableOpacity>
       </View>
 
       <View style={styles.tabs}>
@@ -98,16 +95,21 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    left: 0,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
   },
   saveBtn: {
-    backgroundColor: '#7a2d2d',
+    backgroundColor: '#5c0f25',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
