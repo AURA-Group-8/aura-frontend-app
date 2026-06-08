@@ -29,40 +29,56 @@ export default function UploadsScreen() {
 
 
     const API_ETL_URL = process.env.EXPO_PUBLIC_API_ETL_URL || 'http://localhost:8080'
-        
+
     const getFileTemplate = async () => {
         try {
-            console.info('Iniciando download do template de arquivo...')
-            const url = `${API_ETL_URL}/api/v1/template`
+            console.info('Iniciando download do template de arquivo...');
 
-            console.info('Fazendo requisição para:', url)
-            const response = await fetch(url)
-            const blob = await response.blob()
+            const url = `${API_ETL_URL}/api/v1/template`;
 
-            const reader = new FileReader()
+            console.info('Fazendo requisição para:', url);
 
-            console.info('Iniciando leitura do blob...')
-            reader.onloadend = async () => {
-                const base64 = reader.result.split(',')[1]
+            const response = await axios.get(url, {
+                responseType: 'arraybuffer',
+            });
 
-                const fileUri = FileSystem.cacheDirectory + 'template.xlsx'
+            const filename = 'template.xlsx';
+            const filePath = `${FileSystem.cacheDirectory}${filename}`;
 
-                await FileSystem.writeAsStringAsync(fileUri, base64, {
-                    encoding: FileSystem.EncodingType.Base64,
-                })
+            // Converter arraybuffer para string
+            const uint8Array = new Uint8Array(response.data);
+            const binaryString = String.fromCharCode.apply(null, uint8Array);
+            const base64String = btoa(binaryString);
 
-                console.debug('Arquivo salvo em:', fileUri)
+            // Escrever arquivo
+            await FileSystem.writeAsStringAsync(filePath, base64String, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
 
-                await Sharing.shareAsync(fileUri)
+            console.debug('Arquivo salvo em:', filePath);
+
+            // Compartilhar arquivo
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(filePath, {
+                    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    dialogTitle: 'Compartilhar Template',
+                });
+            } else {
+                Alert.alert(
+                    'Sucesso',
+                    `Arquivo baixado em: ${filePath}`
+                );
             }
 
-            reader.readAsDataURL(blob)
-
         } catch (error) {
-            console.error('Erro ao baixar o template:', error)
-            Alert.alert('Erro', 'Não foi possível baixar o arquivo.')
+            console.error('Erro ao baixar o template:', error);
+
+            Alert.alert(
+                'Erro',
+                error?.message || 'Não foi possível baixar o arquivo.'
+            );
         }
-    }
+    };
 
     const pickAndUploadFile = async () => {
         try {
@@ -76,7 +92,6 @@ export default function UploadsScreen() {
             const file = result.assets[0]
 
             const formData = new FormData()
-
             formData.append('file', {
                 uri: file.uri,
                 name: file.name,
@@ -85,29 +100,28 @@ export default function UploadsScreen() {
 
             console.info('Iniciando upload do arquivo:', file.name)
             console.info('URL de envio:', `${API_ETL_URL}/api/v1/custos`)
-            const response = await fetch(`${API_ETL_URL}/api/v1/custos`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-                body: formData,
-            })
 
-            const data = await response.json()
-            console.debug('Resposta do upload:', data)
-            if (response.ok) {
-                setPopupVisible(true);
-                setPopupMessage('Arquivo enviado com sucesso!');
-                setPopupType('success');
-            } else {
-                console.error('Erro no upload:', data);
-                setPopupVisible(true);
-                setPopupMessage(`Falha ao enviar o arquivo. ${data.detail}.`);
-                setPopupType('failed');
-            }
+            const response = await axios.post(
+                `${API_ETL_URL}/api/v1/custos`,
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                }
+            )
+
+            console.debug('Resposta do upload:', response.data)
+            
+            setPopupVisible(true);
+            setPopupMessage('Arquivo enviado com sucesso!');
+            setPopupType('success');
 
         } catch (error) {
             console.error('Erro no upload:', error)
+            setPopupVisible(true);
+            setPopupMessage(`Falha ao enviar o arquivo. ${error?.response?.data?.detail || error?.message}.`);
+            setPopupType('failed');
         }
     }
 
@@ -177,7 +191,7 @@ export default function UploadsScreen() {
 
 
             </ScrollView>
-            <CardPopup 
+            <CardPopup
                 message={popupMessage}
                 onClose={() => setPopupVisible(false)}
                 visible={popupVisible}

@@ -250,9 +250,12 @@ export default function Login() {
                 </Text>
               </Text>
               
-                <Text style={localStyles.link} onPress={() => router.push('/Auth/forgot-password')}>
-                  Esqueci a senha
-                </Text>
+              <Text 
+                style={localStyles.link} 
+                onPress={() => router.push('/Auth/forgot-password')}
+              >
+                {t('forgotPassword')}
+              </Text>
               
 
               <Pressable
