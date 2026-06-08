@@ -21,7 +21,7 @@ export default function Schedules() {
   const authHeadersRef = useRef({})
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
   const [ready, setReady] = useState(false)
-  const PAGE_SIZE = 10; // Força sempre 10 agendamentos por página
+  const PAGE_SIZE = 10; 
 
   useEffect(() => {
     const init = async () => {
@@ -59,7 +59,6 @@ export default function Schedules() {
     useCallback(() => {
       if (ready) {
         console.log('🔄 Tela em foco - refrescando agendamentos')
-        // Volta para página 0 ao voltar da tela de criar agendamento
         if (page !== 0) {
           setPage(0)
         } else {
@@ -118,7 +117,6 @@ export default function Schedules() {
 
       console.log('✅ Resposta do servidor:', response.data)
 
-      // Atualiza o estado IMEDIATAMENTE com os novos valores
       setAgendamentos((prev) =>
         prev.map((schedule) =>
           schedule.id === scheduleId
@@ -131,11 +129,9 @@ export default function Schedules() {
         )
       )
 
-      // Verifica se é FEITO com PAGO para remover após 20 segundos
       const isFeitoPago = response.data.status === 'FEITO' && response.data.paymentStatus === 'PAGO'
 
       if (isFeitoPago) {
-        // Aguarda 20 segundos antes de remover o card da lista
         setTimeout(() => {
           setAgendamentos((prev) =>
             prev.filter((schedule) => schedule.id !== scheduleId)
@@ -179,7 +175,6 @@ export default function Schedules() {
 
       console.log('✅ Agendamento deletado com sucesso')
 
-      // Aguarda 20 segundos antes de remover o card da lista
       setTimeout(() => {
         setAgendamentos((prev) =>
           prev.filter((schedule) => schedule.id !== scheduleId)
@@ -205,7 +200,6 @@ export default function Schedules() {
       let hasMorePages = true;
       let backendTotalPages = 1;
 
-      // Carrega páginas consecutivas até ter 10 agendamentos válidos
       while (allSchedules.length < PAGE_SIZE && hasMorePages) {
         const response = await axios.get(`${API_URL}/api/agendamentos/card`, {
           headers: authHeadersRef.current,
@@ -242,7 +236,6 @@ export default function Schedules() {
           feedback: agendamento.feedback,
         }));
 
-        // Filtra apenas agendamentos válidos (PENDENTE)
         const validSchedules = formattedSchedules.filter(sch => {
           const status = String(sch.status).trim().toUpperCase();
           const paymentStatus = String(sch.paymentStatus).trim().toUpperCase();
@@ -255,7 +248,6 @@ export default function Schedules() {
 
         allSchedules = [...allSchedules, ...validSchedules];
 
-        // Se tem menos de 10 agendamentos válidos e há mais páginas, continua
         if (allSchedules.length < PAGE_SIZE && currentPage < backendTotalPages - 1) {
           currentPage++;
         } else {
@@ -263,7 +255,6 @@ export default function Schedules() {
         }
       }
 
-      // Ordena (PENDENTE primeiro, depois por data)
       const sortedSchedules = allSchedules.sort((a, b) => {
         const aIsPending = a.status === 'PENDENTE';
         const bIsPending = b.status === 'PENDENTE';
@@ -278,7 +269,6 @@ export default function Schedules() {
         return aDate - bDate;
       });
 
-      // Calcula páginas baseado no total de agendamentos válidos
       const totalValid = sortedSchedules.length;
       const calculatedTotalPages = Math.ceil(totalValid / PAGE_SIZE) || 1;
 
@@ -308,22 +298,16 @@ export default function Schedules() {
   }
 
   const getFilteredSchedules = () => {
-    // Filtrar: manter PENDENTE ou (FEITO com pagamento pendente)
-    // Remover: CANCELADO e FEITO com PAGO
     const activeSchedules = agendamentos.filter(sch => {
       const status = String(sch.status).trim().toUpperCase()
       const paymentStatus = String(sch.paymentStatus).trim().toUpperCase()
       
-      // Remove CANCELADO
       if (status === 'CANCELADO') return false
       
-      // Remove FEITO com pagamento PAGO
       if (status === 'FEITO' && paymentStatus === 'PAGO') return false
       
-      // Mantém PENDENTE e FEITO com pagamento PENDENTE
       return true
     }).sort((a, b) => {
-      // Pendentes primeiro
       const aIsPending = a.status === 'PENDENTE'
       const bIsPending = b.status === 'PENDENTE'
       
@@ -331,13 +315,11 @@ export default function Schedules() {
         return aIsPending ? -1 : 1
       }
       
-      // Mesmos status: ordena por data
       const aDate = new Date(a.startDatetime || 0)
       const bDate = new Date(b.startDatetime || 0)
       return aDate - bDate
     })
 
-    // NÃO aplicar paginação extra aqui - o backend já paginou
     if (filterType === 'todos') {
       return activeSchedules
     }
@@ -378,7 +360,6 @@ export default function Schedules() {
     return result
   }
 
-  // Voltar para página anterior se página atual ficar vazia
   useEffect(() => {
     const filtered = getFilteredSchedules()
     if (filtered.length === 0 && page > 0 && agendamentos.length > 0) {

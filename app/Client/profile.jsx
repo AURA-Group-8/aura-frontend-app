@@ -60,7 +60,7 @@ export default function Profile() {
         setFormData({
           username: response.data.username || '',
           email: response.data.email || '',
-          password: '••••••••', // Não mostrar senha real
+          password: '••••••••', 
           phone: response.data.phone || ''
         })
       } catch (error) {
@@ -74,14 +74,11 @@ export default function Profile() {
     fetchUserData()
   }, [])
 
-  // Carregar foto de perfil salva
   useEffect(() => {
     const loadProfilePhoto = async () => {
       try {
         const savedPhotoUri = await AsyncStorage.getItem('profilePhotoUri')
         if (savedPhotoUri) {
-          // Apenas tenta usar o URI diretamente
-          // Se o arquivo não existir, o Image component vai tratar silenciosamente
           setProfilePhoto(savedPhotoUri)
         }
       } catch (error) {
@@ -93,10 +90,8 @@ export default function Profile() {
     loadProfilePhoto()
   }, [])
 
-  // Função para lidar com foto capturada
   const handlePhotoCapture = async (photo) => {
     try {
-      // Salvar o URI da foto no AsyncStorage
       await AsyncStorage.setItem('profilePhotoUri', photo.uri)
       setProfilePhoto(photo.uri)
       
@@ -111,7 +106,6 @@ export default function Profile() {
     }
   }
 
-  // Função para formatar telefone
   const formatPhone = (text) => {
     const cleaned = text.replace(/\D/g, '')
     
@@ -131,7 +125,6 @@ export default function Profile() {
 
   const handleSignOut = async () => {
     try {
-      // Limpar dados do AsyncStorage
       await AsyncStorage.removeItem('token')
       await AsyncStorage.removeItem('userId')
       await AsyncStorage.removeItem('profilePhotoUri')
@@ -198,7 +191,7 @@ export default function Profile() {
         id: parseInt(userId),
         username: formData.username,
         email: formData.email,
-        phone: formData.phone.replace(/\D/g, ''), // Remove formatação
+        phone: formData.phone.replace(/\D/g, ''),
         roleId: 2
       }
 
@@ -236,7 +229,6 @@ export default function Profile() {
 
       <View style={styles.container}>
 
-        {/* Card de perfil */}
         <View style={styles.profileCard}>
           <TouchableOpacity 
             style={styles.avatar}
@@ -271,7 +263,6 @@ export default function Profile() {
           </View>
         </View>
 
-        {/* Botão de configurações */}
         <TouchableOpacity
           style={styles.settingsButton}
           onPress={() => setSettingsModalVisible(true)}
@@ -284,7 +275,6 @@ export default function Profile() {
           <Feather name="chevron-right" size={20} color="#8C8C8C" />
         </TouchableOpacity>
 
-        {/* Card de menu */}
         <View style={styles.menuCard}>
 
           <TouchableOpacity
@@ -365,7 +355,6 @@ export default function Profile() {
         
       </View>
       
-      {/* Modal de configurações */}
       <Modal
         visible={settingsModalVisible}
         transparent={true}
@@ -385,7 +374,6 @@ export default function Profile() {
             </View>
 
             <View style={styles.formContainer}>
-              {/* Username */}
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Nome de usuário</Text>
                 <TextInput
@@ -397,7 +385,6 @@ export default function Profile() {
                 />
               </View>
 
-              {/* Email (não editável) */}
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Email</Text>
                 <TextInput
@@ -408,7 +395,6 @@ export default function Profile() {
                 />
               </View>
 
-              {/* Senha (não editável) */}
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Senha</Text>
                 <TextInput
@@ -420,7 +406,6 @@ export default function Profile() {
                 />
               </View>
 
-              {/* Telefone */}
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Telefone</Text>
                 <TextInput
@@ -458,7 +443,6 @@ export default function Profile() {
         </View>
       </Modal>
 
-      {/* Modal de câmera */}
       <CameraModal 
         visible={cameraModalVisible}
         onClose={() => setCameraModalVisible(false)}

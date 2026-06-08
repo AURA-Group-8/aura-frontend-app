@@ -21,7 +21,6 @@ export default function CameraModal({ visible, onClose, onPhotoCapture }) {
   const [capturedPhoto, setCapturedPhoto] = useState(null)
   const [isCapturing, setIsCapturing] = useState(false)
 
-  // Solicitar permissão de câmera ao montar o componente
   useEffect(() => {
     (async () => {
       if (permission?.granted === false) {
@@ -30,7 +29,6 @@ export default function CameraModal({ visible, onClose, onPhotoCapture }) {
     })()
   }, [permission?.granted])
 
-  // Tirar foto
   const takePhoto = async () => {
     if (!cameraRef.current || isCapturing) return
 
@@ -49,30 +47,25 @@ export default function CameraModal({ visible, onClose, onPhotoCapture }) {
     }
   }
 
-  // Salvar foto localmente e fechar modal
   const saveCapturedPhoto = async () => {
     if (!capturedPhoto) return
 
     try {
       setIsCapturing(true)
 
-      // Define o caminho onde a foto será salva
       const fileName = `profile_photo_${Date.now()}.jpg`
       const destPath = `${FileSystem.documentDirectory}${fileName}`
 
-      // Move o arquivo da câmera para a pasta de documentos
       await FileSystem.moveAsync({
         from: capturedPhoto.uri,
         to: destPath,
       })
 
-      // Passar a foto capturada para o componente pai
       onPhotoCapture({
         uri: destPath,
         timestamp: Date.now(),
       })
 
-      // Limpar estado e fechar modal
       setCapturedPhoto(null)
       onClose()
     } catch (error) {
@@ -83,7 +76,6 @@ export default function CameraModal({ visible, onClose, onPhotoCapture }) {
     }
   }
 
-  // Descartar foto capturada
   const discardPhoto = () => {
     setCapturedPhoto(null)
   }
@@ -123,7 +115,6 @@ export default function CameraModal({ visible, onClose, onPhotoCapture }) {
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.container}>
         {capturedPhoto ? (
-          // Tela de visualização da foto capturada
           <View style={styles.previewContainer}>
             <View style={styles.previewHeader}>
               <Text style={styles.previewTitle}>Sua foto</Text>
@@ -211,7 +202,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
 
-  // Estilos de câmera
   camera: {
     flex: 1,
   },
@@ -267,7 +257,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#982546',
   },
 
-  // Estilos de prévia
   previewContainer: {
     flex: 1,
     backgroundColor: '#1a1a1a',
@@ -334,7 +323,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 
-  // Estilos de permissão
   permissionContainer: {
     flex: 1,
     justifyContent: 'center',

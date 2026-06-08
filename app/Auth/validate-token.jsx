@@ -33,8 +33,6 @@ export default function ValidateToken() {
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-
-  // Pop-up state
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
   const [popupType, setPopupType] = useState('success');
@@ -60,10 +58,8 @@ export default function ValidateToken() {
     const passwordTrim = password.trim();
     const confirmTrim = confirmPassword.trim();
 
-    // Regex para detectar emojis
     const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/u;
 
-    // Validar se campos estão preenchidos
     if (!passwordTrim) {
       setPasswordError('Senha é obrigatória');
       hasError = true;

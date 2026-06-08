@@ -39,7 +39,6 @@ export default function HistoryClient() {
     initializeAuth()
   }, [])
 
-  // Mantém refs atualizadas
   useEffect(() => {
     pageRef.current = page
     totalPagesRef.current = totalPages
@@ -78,7 +77,6 @@ export default function HistoryClient() {
       let hasMorePages = true;
       let backendTotalPages = 1;
 
-      // Carrega páginas consecutivas até ter 10 agendamentos válidos
       while (allSchedules.length < PAGE_SIZE && hasMorePages) {
         const response = await axios.get(`${API_URL}/api/agendamentos/card`, {
           headers: authHeadersRef.current,
@@ -115,12 +113,10 @@ export default function HistoryClient() {
           feedback: agendamento.feedback,
         }));
 
-        // Filtra apenas agendamentos do usuário
         const userSchedules = formattedSchedules.filter((agendamento) =>
           String(agendamento.userName).toLowerCase() === String(userNameRef.current).toLowerCase()
         );
 
-        // Filtra apenas FEITO ou CANCELADO
         const completedSchedules = userSchedules.filter((agendamento) => {
           const status = String(agendamento.status).trim().toUpperCase();
           return status === 'FEITO' || status === 'CANCELADO';
@@ -128,7 +124,6 @@ export default function HistoryClient() {
 
         allSchedules = [...allSchedules, ...completedSchedules];
 
-        // Se tem menos de 10 agendamentos válidos e há mais páginas, continua
         if (allSchedules.length < PAGE_SIZE && currentPage < backendTotalPages - 1) {
           currentPage++;
         } else {
@@ -136,14 +131,12 @@ export default function HistoryClient() {
         }
       }
 
-      // Ordena por data de fim (descendente - mais recentes primeiro)
       const sortedSchedules = allSchedules.sort((a, b) => {
         const aDate = new Date(a.endDatetime || 0);
         const bDate = new Date(b.endDatetime || 0);
         return bDate - aDate;
       });
 
-      // Calcula páginas baseado no total de agendamentos válidos
       const totalValid = sortedSchedules.length;
       const calculatedTotalPages = Math.ceil(totalValid / PAGE_SIZE) || 1;
 

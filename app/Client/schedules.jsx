@@ -23,7 +23,7 @@ export default function SchedulesClient() {
   const authHeadersRef = useRef({});
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
   const [ready, setReady] = useState(false)
-  const PAGE_SIZE = 10; // Força sempre 10 agendamentos por página
+  const PAGE_SIZE = 10; 
 
   useEffect(() => {
     const init = async () => {
@@ -89,7 +89,6 @@ export default function SchedulesClient() {
 
       console.log(`✅ Agendamento atualizado com sucesso`)
 
-      // Atualiza o estado IMEDIATAMENTE com os novos valores
       setAgendamentos((prev) =>
         prev.map((schedule) =>
           schedule.id === scheduleId
@@ -102,11 +101,9 @@ export default function SchedulesClient() {
         )
       )
 
-      // Verifica se é FEITO com PAGO para remover após 20 segundos
       const isFeitoPago = updatedFields.status?.toUpperCase() === 'FEITO' && updatedFields.paymentStatus?.toUpperCase() === 'PAGO'
 
       if (isFeitoPago) {
-        // Aguarda 20 segundos antes de remover o card da lista
         setTimeout(() => {
           setAgendamentos((prev) =>
             prev.filter((schedule) => schedule.id !== scheduleId)
@@ -150,7 +147,6 @@ export default function SchedulesClient() {
 
       console.log('✅ Agendamento deletado com sucesso')
 
-      // Aguarda 20 segundos antes de remover o card da lista
       setTimeout(() => {
         setAgendamentos((prev) =>
           prev.filter((schedule) => schedule.id !== scheduleId)
@@ -176,7 +172,6 @@ export default function SchedulesClient() {
       let hasMorePages = true;
       let backendTotalPages = 1;
 
-      // Carrega páginas consecutivas até ter 10 agendamentos válidos
       while (allSchedules.length < PAGE_SIZE && hasMorePages) {
         const response = await axios.get(`${API_URL}/api/agendamentos/card`, {
           headers: authHeadersRef.current,
@@ -201,7 +196,6 @@ export default function SchedulesClient() {
           break;
         }
 
-        // Filtra apenas agendamentos do usuário atual
         const userSchedules = content.filter((agendamento) =>
           String(agendamento.userName).toLowerCase() === String(userNameRef.current).toLowerCase()
         );
@@ -218,7 +212,6 @@ export default function SchedulesClient() {
           feedback: agendamento.feedback,
         }));
 
-        // Filtra agendamentos válidos (remove CANCELADO e FEITO+PAGO)
         const validSchedules = formattedSchedules.filter((agendamento) => {
           const status = String(agendamento.status).trim().toUpperCase();
           const paymentStatus = String(agendamento.paymentStatus).trim().toUpperCase();
@@ -231,7 +224,6 @@ export default function SchedulesClient() {
 
         allSchedules = [...allSchedules, ...validSchedules];
 
-        // Se tem menos de 10 agendamentos válidos e há mais páginas, continua
         if (allSchedules.length < PAGE_SIZE && currentPage < backendTotalPages - 1) {
           currentPage++;
         } else {
@@ -239,7 +231,6 @@ export default function SchedulesClient() {
         }
       }
 
-      // Ordena (PENDENTE primeiro, depois por data)
       const sortedSchedules = allSchedules.sort((a, b) => {
         const aIsPending = a.status === 'PENDENTE';
         const bIsPending = b.status === 'PENDENTE';
@@ -254,7 +245,6 @@ export default function SchedulesClient() {
         return aDate - bDate;
       });
 
-      // Calcula páginas baseado no total de agendamentos válidos
       const totalValid = sortedSchedules.length;
       const calculatedTotalPages = Math.ceil(totalValid / PAGE_SIZE) || 1;
 
@@ -314,7 +304,6 @@ export default function SchedulesClient() {
     })
   }
 
-  // Voltar para página anterior se página atual ficar vazia
   useEffect(() => {
     const filtered = getFilteredSchedules()
     if (filtered.length === 0 && page > 0 && agendamentos.length > 0) {
