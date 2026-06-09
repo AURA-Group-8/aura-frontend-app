@@ -372,9 +372,6 @@ export default function Schedules() {
     <View style={styles.container}>
 
       <View style={styles.header}>
-        <Pressable onPress={() => router.replace('/Auth/login')}>
-          <Ionicons name="chevron-back" size={30} color="#281111" />
-        </Pressable>
         <Text style={styles.title}>Meus Agendamentos</Text>
       </View>
 
