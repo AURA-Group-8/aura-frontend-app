@@ -45,19 +45,16 @@ export default function UploadsScreen() {
             const filename = 'template.xlsx';
             const filePath = `${FileSystem.cacheDirectory}${filename}`;
 
-            // Converter arraybuffer para string
             const uint8Array = new Uint8Array(response.data);
             const binaryString = String.fromCharCode.apply(null, uint8Array);
             const base64String = btoa(binaryString);
 
-            // Escrever arquivo
             await FileSystem.writeAsStringAsync(filePath, base64String, {
                 encoding: FileSystem.EncodingType.Base64,
             });
 
             console.debug('Arquivo salvo em:', filePath);
 
-            // Compartilhar arquivo
             if (await Sharing.isAvailableAsync()) {
                 await Sharing.shareAsync(filePath, {
                     mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

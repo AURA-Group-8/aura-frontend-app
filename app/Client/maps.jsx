@@ -100,8 +100,6 @@ export default function MapScreen() {
   const getRoute = async (userCoords) => {
     try {
       console.log('Obtendo rota de:', userCoords, 'para:', clinicLocation)
-      
-      // Calcula distância aproximada entre os pontos (em metros) usando Haversine
       const R = 6371000; // Raio da Terra em metros
       const lat1 = (userCoords.latitude * Math.PI) / 180
       const lat2 = (clinicLocation.latitude * Math.PI) / 180
@@ -115,11 +113,9 @@ export default function MapScreen() {
       
       console.log('📍 Distância aproximada:', (distanceMeters / 1000).toFixed(1), 'km')
       
-      // Se a distância for maior que 6000 km, não tenta usar a API
       if (distanceMeters > 6000000) {
         console.log('⚠️ Distância muito grande para calcular rota (máximo 6000 km)')
-        // Mostra informações estimadas
-        const estimatedHours = Math.ceil(distanceMeters / 1000 / 80)
+       const estimatedHours = Math.ceil(distanceMeters / 1000 / 80)
         const routeInfoData = {
           distance: (distanceMeters / 1000).toFixed(1) + ' km',
           duration: estimatedHours > 24 ? Math.ceil(estimatedHours / 24) + 'd' : estimatedHours + 'h',

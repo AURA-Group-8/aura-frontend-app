@@ -54,6 +54,9 @@ export default function Finances() {
   const [topServiciosData, setTopServiciosData] = useState([])
   const [topServiciosModalOpen, setTopServiciosModalOpen] = useState(false)
   const [inactiveClientsData, setInactiveClientsData] = useState([])
+  const [allInactiveClientsModalOpen, setAllInactiveClientsModalOpen] = useState(false)
+  const [allClientsData, setAllClientsData] = useState([])
+  const [loadingInactivos, setLoadingInactivos] = useState(false)
   const [agendamentosInfoOpen, setAgendamentosInfoOpen] = useState(false)
   const [tkmInfoOpen, setTkmInfoOpen] = useState(false)
   const [receitaInfoOpen, setReceitaInfoOpen] = useState(false)
@@ -186,6 +189,39 @@ export default function Finances() {
     }
   }
 
+  async function fetchAllClientesInativos() {
+    try {
+      setLoadingInactivos(true)
+      console.log('=== Iniciando busca de clientes inativos ===')
+      
+      const response = await axios.get(`${API_URL}/api/v1/clientes_inativos`, {
+        headers: authHeadersRef.current,
+      })
+
+      console.log('=== Resposta da API ===')
+      console.log('Status:', response.status)
+      console.log('Dados:', response.data)
+      console.log('Tipo:', typeof response.data)
+      console.log('É array?', Array.isArray(response.data))
+      
+      const data = response.data
+      if (Array.isArray(data)) {
+        console.log('✅ Total de clientes recebidos:', data.length)
+        console.log('Primeiro cliente:', data[0])
+        setAllClientsData(data)
+        console.log('Estado atualizado com', data.length, 'clientes')
+      } else {
+        console.log('❌ Dados não é um array')
+        setAllClientsData([])
+      }
+    } catch (error) {
+      console.error('❌ Erro ao buscar clientes inativos:', error.message)
+      setAllClientsData([])
+    } finally {
+      setLoadingInactivos(false)
+    }
+  }
+
   useEffect(() => {
     const init = async () => {
       const token = await AsyncStorage.getItem('token')
@@ -205,7 +241,7 @@ export default function Finances() {
         try {
           await NavigationBar.setVisibilityAsync('hidden').catch(() => {})
         } catch (e) {
-          // Activity might not be available, ignore
+          console.error('Erro ao ocultar a barra de navegação:', e)
         }
       }
 
@@ -503,7 +539,14 @@ export default function Finances() {
                     <Ionicons name="information-circle-outline" size={18} color="#982546" />
                   </Pressable>
                 </View>
-                <Text style={styles.alertCount}>VER TODOS</Text>
+                <Pressable 
+                  onPress={async () => {
+                    await fetchAllClientesInativos()
+                    setAllInactiveClientsModalOpen(true)
+                  }}
+                >
+                  <Text style={styles.alertCount}>VER TODOS</Text>
+                </Pressable>
               </View>
               {inactiveClientsData.length > 0 ? (
                 inactiveClientsData.slice(0, 5).map((client, index) => {
@@ -783,6 +826,79 @@ export default function Finances() {
                 pressed && styles.closeButtonPressed,
               ]}
               onPress={() => setInactivosInfoOpen(false)}
+            >
+              <Text style={styles.closeButtonText}>Fechar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={allInactiveClientsModalOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setAllInactiveClientsModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.allInactivesModalContent]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Todos os Clientes</Text>
+              <Pressable onPress={() => setAllInactiveClientsModalOpen(false)}>
+                <Ionicons name="close" size={24} color="#5c0f25" />
+              </Pressable>
+            </View>
+            
+            {loadingInactivos ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#982546" />
+                <Text style={styles.loadingText}>Carregando clientes...</Text>
+              </View>
+            ) : allClientsData?.length > 0 ? (
+              <ScrollView style={styles.inactiveListContainer}>
+                {allClientsData.map((client, index) => {
+                  const isBadgeAlert = (client.qtd_meses_ultimo_agendamento || 0) >= 6
+                  const badgeType = isBadgeAlert ? 'ALERTA' : 'INFO'
+                  
+                  return (
+                    <View key={index} style={styles.inactiveItemList}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.inactiveNameList}>{client.nome_cliente || '-'}</Text>
+                        <Text style={styles.inactiveDateList}>
+                          {client.qtd_meses_ultimo_agendamento || 0}
+                          {' '}
+                          {(client.qtd_meses_ultimo_agendamento || 0) > 1 ? 'meses' : 'mês'}
+                          {' '} de inatividade
+                        </Text>
+                        {client.ultimo_agendamento && (
+                          <Text style={styles.inactiveDateListSmall}>
+                            Último: {new Date(client.ultimo_agendamento).toLocaleDateString('pt-BR')}
+                          </Text>
+                        )}
+                      </View>
+                      <View
+                        style={[
+                          styles.badgeList,
+                          badgeType === 'ALERTA' ? styles.badgeAlertList : styles.badgeInfoList,
+                        ]}
+                      >
+                        <Text style={styles.badgeTextList}>{badgeType}</Text>
+                      </View>
+                    </View>
+                  )
+                })}
+                </ScrollView>
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>Nenhum cliente inativo encontrado</Text>
+              </View>
+            )}
+            
+            <Pressable
+              style={({ pressed }) => [
+                styles.closeButton,
+                pressed && styles.closeButtonPressed,
+              ]}
+              onPress={() => setAllInactiveClientsModalOpen(false)}
             >
               <Text style={styles.closeButtonText}>Fechar</Text>
             </Pressable>
@@ -1195,7 +1311,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
   },
   closeButtonPressed: {
     opacity: 0.8,
@@ -1264,5 +1382,65 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     color: '#7A5A52',
+  },
+  allInactivesModalContent: {
+    maxHeight: '95%',
+    paddingBottom: 0,
+    flex: 1,
+    flexDirection: 'column',
+  },
+  inactiveListContainer: {
+    flex: 1,
+    marginVertical: 16,
+  },
+  inactiveItemList: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0e3c7',
+  },
+  inactiveNameList: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#3d2b2b',
+    marginBottom: 4,
+  },
+  inactiveDateList: {
+    fontSize: 12,
+    color: '#7a5a52',
+  },
+  inactiveDateListSmall: {
+    fontSize: 11,
+    color: '#999999',
+    marginTop: 2,
+  },
+  badgeList: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  badgeAlertList: {
+    backgroundColor: '#ff9999',
+  },
+  badgeInfoList: {
+    backgroundColor: '#99ccff',
+  },
+  badgeTextList: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#7a5a52',
+    textAlign: 'center',
   },
 })

@@ -7,7 +7,8 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  Alert
+  Alert,
+  Modal
 } from 'react-native'
 import { Ionicons, Feather } from '@expo/vector-icons'
 import NavbarPro from './_Components/NavbarPro'
@@ -20,6 +21,10 @@ export default function ClientesScreen() {
   const [searchText, setSearchText] = useState('') 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [modalVisible, setModalVisible] = useState(false)
+  const [selectedClientForNotes, setSelectedClientForNotes] = useState(null)
+  const [observationText, setObservationText] = useState('')
+  const [savingNotes, setSavingNotes] = useState(false)
   
   const authHeadersRef = useRef(null)
   const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
@@ -31,7 +36,8 @@ export default function ClientesScreen() {
         authHeadersRef.current = token ? { Authorization: `Bearer ${token}` } : {}
         await fetchClientes()
       } catch (err) {
-        console.error("Erro ao iniciar:", err)
+        setError('Não foi possível carregar a lista de clientes.')
+        Alert.alert("Erro", "Falha ao conectar com o servidor.")
       }
     }
     init()
@@ -39,23 +45,20 @@ export default function ClientesScreen() {
 
   useEffect(() => {
     handleFilter()
-  }, [searchText])
+  }, [searchText, clientes])
 
   async function fetchClientes() {
     try {
       setLoading(true)
       setError(null)
-      setSearchText('') 
       
       const response = await axios.get(`${API_URL}/api/usuarios`, {
         headers: authHeadersRef.current,
       })
 
-      setClientes(response.data) 
-      setFilteredClientes(response.data) 
+      setClientes(response.data)
       
     } catch (err) {
-      console.error('❌ Erro ao buscar clientes:', err)
       setError('Não foi possível carregar a lista de clientes.')
       Alert.alert("Erro", "Falha ao conectar com o servidor.")
     } finally {
@@ -77,6 +80,40 @@ export default function ClientesScreen() {
       (cliente.email && cliente.email.toLowerCase().includes(searchLower))
     )
     setFilteredClientes(filtered)
+  }
+
+  const openNotesModal = (cliente) => {
+    setSelectedClientForNotes(cliente)
+    setObservationText(cliente.observation || '')
+    setModalVisible(true)
+  }
+
+  const closeNotesModal = () => {
+    setModalVisible(false)
+    setSelectedClientForNotes(null)
+    setObservationText('')
+  }
+
+  const saveObservation = async () => {
+    if (!selectedClientForNotes) return
+
+    try {
+      setSavingNotes(true)
+      
+      await axios.patch(
+        `${API_URL}/api/usuarios/${selectedClientForNotes.id}`,
+        { observation: observationText },
+        { headers: authHeadersRef.current }
+      )
+
+      await fetchClientes()
+      closeNotesModal()
+      Alert.alert('Sucesso', 'Observação salva com sucesso!')
+    } catch (err) {
+      Alert.alert('Erro', 'Não foi possível salvar a observação.')
+    } finally {
+      setSavingNotes(false)
+    }
   }
 
   return (
@@ -110,13 +147,19 @@ export default function ClientesScreen() {
             <FlatList
               data={filteredClientes} 
               keyExtractor={(item) => item.id.toString()}
+              scrollEnabled={true}
+              nestedScrollEnabled={true}
               renderItem={({ item }) => {
                 return (
                   <View style={styles.card}>
                     <View style={styles.cardHeader}>
                       <Text style={styles.nome}>{item.username}</Text>
-                      <TouchableOpacity>
-                        <Feather name="message-circle" size={18} color="#7a4b4b" />
+                      <TouchableOpacity 
+                        onPress={() => openNotesModal(item)}
+                        activeOpacity={0.6}
+                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                      >
+                        <Feather name="message-circle" size={20} color="#7a4b4b" />
                       </TouchableOpacity>
                     </View>
 
@@ -132,9 +175,12 @@ export default function ClientesScreen() {
                       </Text>
                     </View>
 
-                    {item.observation && item.observation !== 'string' && (
-                      <View style={styles.obs}>
-                        <Text style={styles.obsText}>{item.observation}</Text>
+                    {item.observation && item.observation.trim() !== '' && item.observation !== 'string' && (
+                      <View style={styles.obsContainer}>
+                        <Text style={styles.obsLabel}>Obs.:</Text>
+                        <Text style={styles.obsText} numberOfLines={2}>
+                          {item.observation}
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -147,6 +193,59 @@ export default function ClientesScreen() {
           </View>
         )}
       </View>
+
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={closeNotesModal}
+        statusBarTranslucent={true}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                Observações - {selectedClientForNotes?.username}
+              </Text>
+              <TouchableOpacity onPress={closeNotesModal} disabled={savingNotes}>
+                <Ionicons name="close" size={24} color="#7a4b4b" />
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              style={styles.notesInput}
+              placeholder="Digite as observações sobre o cliente..."
+              placeholderTextColor="#999"
+              multiline={true}
+              value={observationText}
+              onChangeText={setObservationText}
+              editable={!savingNotes}
+            />
+
+            <View style={styles.modalButtonsContainer}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={closeNotesModal}
+                disabled={savingNotes}
+              >
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={saveObservation}
+                disabled={savingNotes}
+              >
+                {savingNotes ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Salvar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <NavbarPro active="Clientes" />
     </View>
@@ -223,13 +322,99 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 10
   },
+  obsContainer: {
+    marginTop: 12,
+    backgroundColor: '#fff9f3',
+    padding: 10,
+    borderRadius: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#7a4b4b',
+    flexDirection: 'row',
+    alignItems: 'flex-start'
+  },
+  obsLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#7a4b4b',
+    marginRight: 6,
+    textTransform: 'lowercase'
+  },
   obsText: {
-    fontSize: 12,
-    color: '#6b4b4b'
+    fontSize: 13,
+    color: '#5c3b3b',
+    lineHeight: 18,
+    flex: 1
   },
   emptyText: {
     textAlign: 'center', 
     marginTop: 20, 
     color: '#7a4b4b'
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end'
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+    maxHeight: '80%'
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#5c0f25',
+    flex: 1
+  },
+  notesInput: {
+    borderWidth: 1,
+    borderColor: '#d4b98f',
+    borderRadius: 12,
+    padding: 12,
+    minHeight: 120,
+    maxHeight: 200,
+    textAlignVertical: 'top',
+    backgroundColor: '#fff',
+    color: '#281111',
+    marginBottom: 20
+  },
+  modalButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  cancelButton: {
+    backgroundColor: '#e8d6c8',
+    borderWidth: 1,
+    borderColor: '#d4b98f'
+  },
+  cancelButtonText: {
+    color: '#5c0f25',
+    fontWeight: '600',
+    fontSize: 14
+  },
+  saveButton: {
+    backgroundColor: '#7a4b4b'
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14
   }
 })

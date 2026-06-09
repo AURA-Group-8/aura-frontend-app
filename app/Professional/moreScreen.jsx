@@ -18,7 +18,7 @@ export default function MaisScreen() {
     const [userData, setUserData] = useState({ username: '', email: '' })
     const [loading, setLoading] = useState(true)
 
-    const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
+    const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http:localhost:8080'
 
     useEffect(() => {
         const fetchUserData = async () => {
