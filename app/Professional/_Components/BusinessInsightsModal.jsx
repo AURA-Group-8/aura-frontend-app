@@ -20,7 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const ETL_URL = process.env.EXPO_PUBLIC_API_ETL_URL || 'http://localhost:8000';
+const AI_URL = process.env.EXPO_PUBLIC_API_AI_URL || 'http://localhost:8000';
 
 export default function BusinessInsightsModal({
   visible,
@@ -77,25 +77,24 @@ export default function BusinessInsightsModal({
 
       const authHeaders = await getAuthHeaders();
 
-      console.log('ETL_URL:', ETL_URL);
-      console.log('authHeaders:', authHeaders);
+      console.log('AI_URL:', AI_URL);
 
       if (alwaysGenerate) {
-        await axios.delete(`${ETL_URL}/api/v1/cache`, {
+        await axios.delete(`${AI_URL}/api/v1/cache`, {
           headers: authHeaders,
           timeout: 30000
         });
       }
 
       console.log('Fazendo GET...');
-      await axios.get(`${ETL_URL}/api/v1/insights`, {
+      await axios.get(`${AI_URL}/api/v1/insights`, {
         headers: authHeaders,
         timeout: 120000
       });
 
       console.log('Fazendo POST...');
       const response = await axios.post(
-        `${ETL_URL}/api/v1/insights`,
+        `${AI_URL}/api/v1/insights`,
         {
           focus: focus.trim(),
           observations: observations.trim()

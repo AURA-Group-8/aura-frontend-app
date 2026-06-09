@@ -92,23 +92,17 @@ export default function UploadsScreen() {
             const file = result.assets[0]
 
             const formData = new FormData()
-            formData.append('file', {
-                uri: file.uri,
-                name: file.name,
-                type: file.mimeType || 'application/octet-stream',
-            })
+            formData.append('file', file.file)
 
             console.info('Iniciando upload do arquivo:', file.name)
             console.info('URL de envio:', `${API_ETL_URL}/api/v1/custos`)
 
+            console.log(JSON.stringify(file, null, 2))
+            console.log(file.file);
+            console.log(file.file instanceof File);
             const response = await axios.post(
                 `${API_ETL_URL}/api/v1/custos`,
-                formData,
-                {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                }
+                formData
             )
 
             console.debug('Resposta do upload:', response.data)
